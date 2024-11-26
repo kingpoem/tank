@@ -40,6 +40,119 @@ class Map(GameObject):
         # 初始化时调用 Prim 算法
         self.__doRandomPrim()
 
+        self.body = Body(body_type=Body.STATIC)
+        self.shapes = []
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.map[y][x] == 1:
+                    base_point = (
+                        OFFEST_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
+                        OFFEST_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
+                    )
+
+                    # 向上
+
+                    if y != 0 and self.map[y - 1][x] == 1:
+                        self.shapes.append(
+                            Poly(
+                                self.body,
+                                [
+                                    (
+                                        base_point[0] - WALL_WIDTH / 2,
+                                        base_point[1] + WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + WALL_WIDTH / 2,
+                                        base_point[1] + WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] - WALL_WIDTH / 2,
+                                        base_point[1] - PLOT_HEIGHT - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + WALL_WIDTH / 2,
+                                        base_point[1] - PLOT_HEIGHT - WALL_WIDTH / 2,
+                                    ),
+                                ],
+                            )
+                        )
+                    if y != self.height - 1 and self.map[y + 1][x] == 1:
+                        self.shapes.append(
+                            Poly(
+                                self.body,
+                                [
+                                    (
+                                        base_point[0] - WALL_WIDTH / 2,
+                                        base_point[1] - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + WALL_WIDTH / 2,
+                                        base_point[1] - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] - WALL_WIDTH / 2,
+                                        base_point[1] + PLOT_HEIGHT + WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + WALL_WIDTH / 2,
+                                        base_point[1] + PLOT_HEIGHT + WALL_WIDTH / 2,
+                                    ),
+                                ],
+                            )
+                        )
+                    # 向左
+                    if x != 0 and self.map[y][x - 1] == 1:
+                        self.shapes.append(
+                            Poly(
+                                self.body,
+                                [
+                                    (
+                                        base_point[0] + WALL_WIDTH / 2,
+                                        base_point[1] - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + WALL_WIDTH / 2,
+                                        base_point[1] + WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] - PLOT_WIDTH - WALL_WIDTH / 2,
+                                        base_point[1] - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] - PLOT_WIDTH - WALL_WIDTH / 2,
+                                        base_point[1] + WALL_WIDTH / 2,
+                                    ),
+                                ],
+                            )
+                        )
+                    if x != self.width - 1 and self.map[y][x + 1] == 1:
+                        self.shapes.append(
+                            Poly(
+                                self.body,
+                                [
+                                    (
+                                        base_point[0] - WALL_WIDTH / 2,
+                                        base_point[1] - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] - WALL_WIDTH / 2,
+                                        base_point[1] + WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + PLOT_WIDTH + WALL_WIDTH / 2,
+                                        base_point[1] - WALL_WIDTH / 2,
+                                    ),
+                                    (
+                                        base_point[0] + PLOT_WIDTH + WALL_WIDTH / 2,
+                                        base_point[1] + WALL_WIDTH / 2,
+                                    ),
+                                ],
+                            )
+                        )
+        for shape in self.shapes:
+            shape.elasticity = 1
+            shape.friction = 1
+
     # 定义将整个Map的单元设置为某个值的函数
     def resetMap(self, value):
         for y in range(self.height):
@@ -102,120 +215,6 @@ class Map(GameObject):
                             WALL_WIDTH,
                         )
 
-    def setBody(self, space: Space):
-        wall = Body(body_type=Body.STATIC)
-        wallShapes: list[Shape] = []
-        for x in range(self.width):
-            for y in range(self.height):
-                if self.map[y][x] == 1:
-                    base_point = (
-                        OFFEST_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
-                        OFFEST_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
-                    )
-
-                    # 向上
-
-                    if y != 0 and self.map[y - 1][x] == 1:
-                        wallShapes.append(
-                            Poly(
-                                wall,
-                                [
-                                    (
-                                        base_point[0] - WALL_WIDTH / 2,
-                                        base_point[1] + WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + WALL_WIDTH / 2,
-                                        base_point[1] + WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] - WALL_WIDTH / 2,
-                                        base_point[1] - PLOT_HEIGHT - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + WALL_WIDTH / 2,
-                                        base_point[1] - PLOT_HEIGHT - WALL_WIDTH / 2,
-                                    ),
-                                ],
-                            )
-                        )
-                    if y != self.height - 1 and self.map[y + 1][x] == 1:
-                        wallShapes.append(
-                            Poly(
-                                wall,
-                                [
-                                    (
-                                        base_point[0] - WALL_WIDTH / 2,
-                                        base_point[1] - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + WALL_WIDTH / 2,
-                                        base_point[1] - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] - WALL_WIDTH / 2,
-                                        base_point[1] + PLOT_HEIGHT + WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + WALL_WIDTH / 2,
-                                        base_point[1] + PLOT_HEIGHT + WALL_WIDTH / 2,
-                                    ),
-                                ],
-                            )
-                        )
-                    # 向左
-                    if x != 0 and self.map[y][x - 1] == 1:
-                        wallShapes.append(
-                            Poly(
-                                wall,
-                                [
-                                    (
-                                        base_point[0] + WALL_WIDTH / 2,
-                                        base_point[1] - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + WALL_WIDTH / 2,
-                                        base_point[1] + WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] - PLOT_WIDTH - WALL_WIDTH / 2,
-                                        base_point[1] - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] - PLOT_WIDTH - WALL_WIDTH / 2,
-                                        base_point[1] + WALL_WIDTH / 2,
-                                    ),
-                                ],
-                            )
-                        )
-                    if x != self.width - 1 and self.map[y][x + 1] == 1:
-                        wallShapes.append(
-                            Poly(
-                                wall,
-                                [
-                                    (
-                                        base_point[0] - WALL_WIDTH / 2,
-                                        base_point[1] - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] - WALL_WIDTH / 2,
-                                        base_point[1] + WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + PLOT_WIDTH + WALL_WIDTH / 2,
-                                        base_point[1] - WALL_WIDTH / 2,
-                                    ),
-                                    (
-                                        base_point[0] + PLOT_WIDTH + WALL_WIDTH / 2,
-                                        base_point[1] + WALL_WIDTH / 2,
-                                    ),
-                                ],
-                            )
-                        )
-        for shape in wallShapes:
-            shape.elasticity = 1
-            shape.friction = 1
-        space.add(wall, *wallShapes)
 
     def __checkAdjacentPos(
         self, x: int, y: int, width: int, height: int, checklist: list[tuple[int, int]]

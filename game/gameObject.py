@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Callable
 from pygame import Surface
 from pymunk import Body, Shape, Space
 
@@ -23,6 +24,11 @@ class GameObject(ABC):
     物理世界复合形状
     """
 
+    Removed : Callable[[],None] | None = None
+    """
+    当前物体被移除时调用
+    """
+
     def __init__(self, surface: Surface, body: Body, shapes: list[Shape]):
         self.surface = surface
         self.body = body
@@ -31,12 +37,18 @@ class GameObject(ABC):
     @abstractmethod
     def draw(self, screen: Surface):
         """
-        每帧绘制物体的方法
+        每帧绘制物体
         """
         pass
 
     def setBody(self, space: Space):
         """
-        设置物体在物理世界的属性的方法
+        设置物理世界物体
         """
         space.add(self.body, *self.shapes)
+
+    def removeBody(self,space : Space):
+        """
+        移除物理世界物体
+        """
+        space.remove(self.body,*self.shapes)
