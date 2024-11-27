@@ -1,4 +1,5 @@
 .conda
 .venv
+.vscode
 assets
 __pycache__
