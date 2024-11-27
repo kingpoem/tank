@@ -33,7 +33,7 @@ class Bullet(GameObject):
         self.shapes = [Circle(self.body, 4)]
 
         # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-        event = EventManager.allocateEventId()
+        event = EventManager.allocateEventType()
 
         def __delayCollisionTypeEventHandler():
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
@@ -46,7 +46,7 @@ class Bullet(GameObject):
 
         pass
 
-    def draw(self, screen: Surface):
+    def render(self, screen: Surface):
         if self.body.space:
             draw.circle(screen, (0, 0, 0), self.body.position, 4)
         pass

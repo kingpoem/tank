@@ -6,38 +6,34 @@ from game.gameSpace import GameSpace
 
 class GameObjectManager:
 
-    __objects: set[GameObject] = set()
+    __objects: list[GameObject]
 
-    # 阻止实例化
     def __init__(self):
-        raise NotImplementedError("GameObjectManager是静态类不允许实例化")
+        self.__objects = list()
 
-    @staticmethod
-    def registerObject(object: GameObject):
-        if object in GameObjectManager.__objects:
+    def registerObject(self, object: GameObject):
+        if object in self.__objects:
             return
-        GameObjectManager.__objects.add(object)
+        self.__objects.append(object)
         object.setBody(GameSpace.getSpace())
 
-    @staticmethod
-    def removeObject(object: GameObject):
-        GameObjectManager.__objects.remove(object)
+    def removeObject(self, object: GameObject):
+        if object not in self.__objects:
+            return
+        self.__objects.remove(object)
         object.removeBody(GameSpace.getSpace())
         if object.Removed is not None:
             object.Removed()
 
-    @staticmethod
-    def drawObjects(screen: Surface):
-        for obj in GameObjectManager.__objects:
-            obj.draw(screen)
+    def renderObjects(self, screen: Surface):
+        for obj in self.__objects:
+            obj.render(screen)
 
-    @staticmethod
-    def getGameObjectByBody(body: Body):
-        for obj in GameObjectManager.__objects:
+    def getGameObjectByBody(self, body: Body):
+        for obj in self.__objects:
             if obj.body == body:
                 return obj
         return None
 
-    @staticmethod
-    def containObject(object: GameObject):
-        return object in GameObjectManager.__objects
+    def containObject(self, object: GameObject):
+        return object in self.__objects

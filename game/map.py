@@ -2,15 +2,20 @@ from random import randint, choice
 from enum import Enum
 
 from pygame import Surface, draw
+import pygame
 from pymunk import Body, Segment, Shape, Space, Poly
 
 from game.gameObject import GameObject
 
+# 地图边距
+MARGIN_X = 40
+MARGIN_Y = 40
 
-OFFEST_X = 40
-OFFEST_Y = 40
+# 地图格子尺寸
 PLOT_WIDTH = 40
 PLOT_HEIGHT = 40
+
+# 墙的宽度
 WALL_WIDTH = 10
 
 
@@ -39,15 +44,59 @@ class Map(GameObject):
         ]
         # 初始化时调用 Prim 算法
         self.__doRandomPrim()
-
+        
+        self.surface = pygame.Surface((MARGIN_X * 2 + PLOT_WIDTH * width,MARGIN_Y * 2 + PLOT_HEIGHT * height))
+        self.surface.fill((255, 255, 255))
+        for x in range(self.width):
+            for y in range(self.height):
+                if self.map[y][x] == 1:
+                    base_point = (
+                        MARGIN_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
+                        MARGIN_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
+                    )
+                    # pygame.draw.circle(screen,(0,0,0),base_point,int(WALL_WIDTH / 2))
+                    # 向上
+                    if y != 0 and self.map[y - 1][x] == 1:
+                        draw.line(
+                            self.surface,
+                            (0, 0, 0),
+                            (base_point[0], base_point[1] + WALL_WIDTH / 2),
+                            (base_point[0], base_point[1] - PLOT_HEIGHT - WALL_WIDTH / 2),
+                            WALL_WIDTH,
+                        )
+                    if y != self.height - 1 and self.map[y + 1][x] == 1:
+                        draw.line(
+                            self.surface,
+                            (0, 0, 0),
+                            (base_point[0], base_point[1] - WALL_WIDTH / 2),
+                            (base_point[0], base_point[1] + PLOT_HEIGHT + WALL_WIDTH / 2),
+                            WALL_WIDTH,
+                        )
+                    # 向左
+                    if x != 0 and self.map[y][x - 1] == 1:
+                        draw.line(
+                            self.surface,
+                            (0, 0, 0),
+                            (base_point[0] + WALL_WIDTH / 2, base_point[1]),
+                            (base_point[0] - PLOT_WIDTH - WALL_WIDTH / 2, base_point[1]),
+                            WALL_WIDTH,
+                        )
+                    if x != self.width - 1 and self.map[y][x + 1] == 1:
+                        draw.line(
+                            self.surface,
+                            (0, 0, 0),
+                            (base_point[0] - WALL_WIDTH / 2, base_point[1]),
+                            (base_point[0] + PLOT_WIDTH + WALL_WIDTH / 2, base_point[1]),
+                            WALL_WIDTH,
+                        )
         self.body = Body(body_type=Body.STATIC)
         self.shapes = []
         for x in range(self.width):
             for y in range(self.height):
                 if self.map[y][x] == 1:
                     base_point = (
-                        OFFEST_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
-                        OFFEST_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
+                        MARGIN_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
+                        MARGIN_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
                     )
 
                     # 向上
@@ -171,49 +220,8 @@ class Map(GameObject):
         return self.map[y][x] == 1  # 等于1返回True，代表未被访问，不等于1返回False
 
     # 绘制迷宫函数
-    def draw(self, screen: Surface):
-        for x in range(self.width):
-            for y in range(self.height):
-                if self.map[y][x] == 1:
-                    base_point = (
-                        OFFEST_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
-                        OFFEST_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
-                    )
-                    # pygame.draw.circle(screen,(0,0,0),base_point,int(WALL_WIDTH / 2))
-                    # 向上
-                    if y != 0 and self.map[y - 1][x] == 1:
-                        draw.line(
-                            screen,
-                            (0, 0, 0),
-                            (base_point[0], base_point[1] + WALL_WIDTH / 2),
-                            (base_point[0], base_point[1] - PLOT_HEIGHT - WALL_WIDTH / 2),
-                            WALL_WIDTH,
-                        )
-                    if y != self.height - 1 and self.map[y + 1][x] == 1:
-                        draw.line(
-                            screen,
-                            (0, 0, 0),
-                            (base_point[0], base_point[1] - WALL_WIDTH / 2),
-                            (base_point[0], base_point[1] + PLOT_HEIGHT + WALL_WIDTH / 2),
-                            WALL_WIDTH,
-                        )
-                    # 向左
-                    if x != 0 and self.map[y][x - 1] == 1:
-                        draw.line(
-                            screen,
-                            (0, 0, 0),
-                            (base_point[0] + WALL_WIDTH / 2, base_point[1]),
-                            (base_point[0] - PLOT_WIDTH - WALL_WIDTH / 2, base_point[1]),
-                            WALL_WIDTH,
-                        )
-                    if x != self.width - 1 and self.map[y][x + 1] == 1:
-                        draw.line(
-                            screen,
-                            (0, 0, 0),
-                            (base_point[0] - WALL_WIDTH / 2, base_point[1]),
-                            (base_point[0] + PLOT_WIDTH + WALL_WIDTH / 2, base_point[1]),
-                            WALL_WIDTH,
-                        )
+    def render(self, screen: Surface):
+        screen.blit(self.surface, (0, 0))
 
 
     def __checkAdjacentPos(

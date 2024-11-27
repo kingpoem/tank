@@ -7,30 +7,31 @@ from typing import Callable
 
 class EventManager:
 
-    __nextEventId: int = USEREVENT + 1
+    __nextEventType: int = USEREVENT + 1
     __eventHandlers: dict[int, list[Callable[[Event], None]]] = {}
 
     def __init__(self):
         raise NotADirectoryError("EventManager静态类无法实例化")
 
     @staticmethod
-    def addHandler(eventId: int, handler: Callable[[Event], None]):
-        if eventId not in EventManager.__eventHandlers:
-            EventManager.__eventHandlers[eventId] = []
-        EventManager.__eventHandlers[eventId].append(handler)
+    def addHandler(eventType: int, handler: Callable[[Event], None]):
+        if eventType not in EventManager.__eventHandlers:
+            EventManager.__eventHandlers[eventType] = []
+        EventManager.__eventHandlers[eventType].append(handler)
 
     @staticmethod
     @logger.catch
-    def removeHandler(eventId: int, handler: Callable[[Event], None]):
-        EventManager.__eventHandlers[eventId].remove(handler)
+    def removeHandler(eventType: int, handler: Callable[[Event], None]):
+        EventManager.__eventHandlers[eventType].remove(handler)
 
     @staticmethod
-    def setTimer(eventId: int, millis: int, loops: int = 0):
-        set_timer(eventId, millis, loops)
+    def setTimer(eventType: int, millis: int, loops: int = 0):
+        set_timer(eventType, millis, loops)
+        logger.debug(f"设置定时器{eventType}，间隔{millis}毫秒，循环{loops}次")
 
     @staticmethod
-    def cancelTimer(eventId: int):
-        set_timer(eventId, 0, 0)
+    def cancelTimer(eventType: int):
+        set_timer(eventType, 0, 0)
 
     @staticmethod
     def handleEvent(event: Event):
@@ -42,10 +43,10 @@ class EventManager:
                     logger.exception("事件处理器出错，已跳过")
 
     @staticmethod
-    def allocateEventId():
-        eventId = EventManager.__nextEventId
-        EventManager.__nextEventId += 1
-        return eventId
+    def allocateEventType():
+        eventType = EventManager.__nextEventType
+        EventManager.__nextEventType += 1
+        return eventType
     
     # @staticmethod
     # def allocateEventIdBy(obj : object):

@@ -28,8 +28,12 @@ class Tank(GameObject):
 
     __collisionHandler: CollisionHandler | None = None
     __shotBulletCount: int = 0
+    __gameObjectManager : GameObjectManager
 
-    def __init__(self, initX: float, initY: float, style: TANK_STYLE):
+    def __init__(
+        self, initX: float, initY: float, style: TANK_STYLE, gameObjectManager: GameObjectManager
+    ):
+        self.__gameObjectManager = gameObjectManager
         o_img = image.load(style.value).convert_alpha()
         self.surface = transform.smoothscale_by(
             o_img,
@@ -88,7 +92,7 @@ class Tank(GameObject):
 
         pass
 
-    def draw(self, screen: Surface):
+    def render(self, screen: Surface):
         # 旋转图片 pymunk和pygame旋转方向相反
         if self.body.space:
 
@@ -102,7 +106,7 @@ class Tank(GameObject):
         self.__collisionHandler.post_solve = self.__onBulletCollision
 
     def shoot(self):
-        BULLET_DISAPPEAR_TIME_MS = 10 * 1000
+        BULLET_DISAPPEAR_TIME_MS = 8 * 1000
         BULLET_SHOOT_DIS = self.surface.get_width() / 2 - 4
 
         if self.body.space:
@@ -115,22 +119,21 @@ class Tank(GameObject):
                 self.body.position.y + self.body.rotation_vector.y * BULLET_SHOOT_DIS,
                 self.body.angle,
             )
-            event = EventManager.allocateEventId()
+            event = EventManager.allocateEventType()
 
             # 超过指定时间子弹自动消失
             def __bulletOutOfTimeDisappear(bullet: Bullet) -> None:
-                if GameObjectManager.containObject(bullet):
-                    GameObjectManager.removeObject(bullet)
+                if self.__gameObjectManager.containObject(bullet):
+                    self.__gameObjectManager.removeObject(bullet)
                     logger.debug(f"子弹超时消失 {bullet}")
                 EventManager.cancelTimer(event)
-            
-            
+
             def __onBulletDisappear():
                 self.__shotBulletCount = max(0, self.__shotBulletCount - 1)
                 EventManager.cancelTimer(event)
 
             bullet.Removed = __onBulletDisappear
-            GameObjectManager.registerObject(bullet)
+            self.__gameObjectManager.registerObject(bullet)
             EventManager.addHandler(event, lambda e: __bulletOutOfTimeDisappear(bullet))
             EventManager.setTimer(event, BULLET_DISAPPEAR_TIME_MS)
 
@@ -138,8 +141,8 @@ class Tank(GameObject):
 
     def __onBulletCollision(self, arbiter: Arbiter, space: Space, data: dict[Any, Any]):
         # self.removeBody(Space)
-        obj = GameObjectManager.getGameObjectByBody(arbiter.shapes[1].body)
+        obj = self.__gameObjectManager.getGameObjectByBody(arbiter.shapes[1].body)
         if obj is not None:
-            GameObjectManager.removeObject(obj)
-            GameObjectManager.removeObject(self)
-        logger.debug(f"坦克被子弹击中 {self} {obj}")
+            self.__gameObjectManager.removeObject(obj)
+            self.__gameObjectManager.removeObject(self)
+            logger.debug(f"坦克被子弹击中 {self} {obj}")

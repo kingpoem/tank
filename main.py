@@ -1,7 +1,7 @@
 
 import sys
 from loguru import logger
-from game.gameLoop import runLoop
+from game.gameLoop import GameLoop
 
 
 
@@ -28,5 +28,5 @@ if __name__ == "__main__":
     __configureLogger()
 
     # 开始游戏循环
-    runLoop()
+    GameLoop.run()
     pass

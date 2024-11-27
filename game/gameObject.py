@@ -35,7 +35,7 @@ class GameObject(ABC):
         self.shapes = shapes
 
     @abstractmethod
-    def draw(self, screen: Surface):
+    def render(self, screen: Surface):
         """
         每帧绘制物体
         """

@@ -1,0 +1,5 @@
+
+
+BACKGROUND = (255, 255, 255)
+FONT_COLOR = (0, 0, 0)
+
