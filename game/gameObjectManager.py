@@ -25,6 +25,13 @@ class GameObjectManager:
         if object.Removed is not None:
             object.Removed()
 
+    def clearObjects(self):
+        for obj in self.__objects:
+            obj.removeBody(GameSpace.getSpace())
+            if obj.Removed is not None:
+                obj.Removed()
+        self.__objects.clear()
+
     def renderObjects(self, screen: Surface):
         for obj in self.__objects:
             obj.render(screen)

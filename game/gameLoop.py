@@ -6,15 +6,13 @@ import pygame.freetype
 
 from pygame import Surface
 
-from game import player
+
 from game.eventManager import EventManager
-from game.gameObjectManager import GameObjectManager
-from game.gameScene import GameScene
 from game.resources import BACKGROUND, FONT_COLOR
-from game.tank import TANK_STYLE, Tank
-from game.map import PLOT_HEIGHT, PLOT_WIDTH, Map, MARGIN_X, MARGIN_Y
 from game.gameSpace import GameSpace
 from pymunk.pygame_util import DrawOptions
+
+from game.sceneManager import SceneManager
 
 
 FPS = 60
@@ -37,8 +35,8 @@ class GameLoop:
     font: pygame.freetype.Font
     """字体"""
 
-    gameScene: GameScene
-    """游戏场景"""
+
+    __debugOptions : DrawOptions
 
     def __init__(self):
         raise NotImplementedError("GameLoop是静态类不允许实例化")
@@ -59,19 +57,18 @@ class GameLoop:
         # 初始化物理世界
         GameSpace.initSpace()
 
-        GameLoop.gameScene = GameScene()
+        # 初始化场景
+        SceneManager.init()
 
         GameLoop.screen = pygame.display.set_mode(
-            (
-                GameLoop.gameScene.map.surface.get_width(),
-                GameLoop.gameScene.map.surface.get_height()
-                + GameLoop.gameScene.scoreUI.get_height(),
-            ),
+            SceneManager.getCurrentScene().uiSize,
             # pygame.NOFRAME,
         )
         
 
         pygame.display.set_caption("Tank Game")
+
+        GameLoop.__debugOptions = DrawOptions(GameLoop.screen)
 
     @staticmethod
     def run():
@@ -90,8 +87,9 @@ class GameLoop:
         # 初始化游戏时钟
         clock = pygame.time.Clock()
 
+        GameLoop.screen.fill(BACKGROUND)
         while GameLoop.isRunning:
-            clock.tick(FPS)
+            
             GameLoop.fps = clock.get_fps()
             if GameLoop.fps != 0:
                 GameLoop.delta = 1 / GameLoop.fps
@@ -103,10 +101,11 @@ class GameLoop:
 
             # 更新物理世界
             GameSpace.updateSpace(GameLoop.delta)
-            GameLoop.gameScene.update(GameLoop.delta)
+            SceneManager.getCurrentScene().update(GameLoop.delta)
 
-            GameLoop.screen.fill(BACKGROUND)
-            GameLoop.gameScene.render(GameLoop.screen)
+            SceneManager.getCurrentScene().render(GameLoop.screen)
+            # if (space := GameSpace.getSpace()) is not None:
+            #     space.debug_draw(GameLoop.__debugOptions)
 
             # debug
             # FPS
@@ -115,8 +114,9 @@ class GameLoop:
             GameLoop.font.render_to(
                 GameLoop.screen, (0, 24), f"delta: {GameLoop.delta * 1000:.1f}ms", FONT_COLOR
             )
-            pygame.display.update()
+            pygame.display.flip()
 
+            clock.tick(FPS)
         pygame.quit()
         logger.info("游戏退出")
 
@@ -125,7 +125,7 @@ class GameLoop:
         events = pygame.event.get()
         for event in events:
             EventManager.handleEvent(event)
-            GameLoop.gameScene.process(event)
+            SceneManager.getCurrentScene().process(event)
             match event.type:
                 case pygame.QUIT:
                     GameLoop.isRunning = False

@@ -55,6 +55,10 @@ class Player:
         pass
 
     def move(self, delta: float):
+
+        ROTATE_SPEED = 120
+        MOVE_SPEED = 400000
+
         pressed = key.get_pressed()
         # dSpeed = 0
         dAngle = 0
@@ -62,14 +66,14 @@ class Player:
         # b.velocity = b.velocity * 0.9
         # b.angular_velocity = b.angular_velocity * 0.9
         if pressed[self.operation.leftKey]:
-            dAngle -= 100
+            dAngle -= ROTATE_SPEED
         if pressed[self.operation.rightKey]:
-            dAngle += 100
+            dAngle += ROTATE_SPEED
         self.tank.body.angular_velocity = dAngle * delta
         if pressed[self.operation.forwardKey]:
-            dPower += 300000
+            dPower += MOVE_SPEED
         if pressed[self.operation.backKey]:
-            dPower -= 300000
+            dPower -= MOVE_SPEED
 
         if dPower != 0:
             self.tank.body.apply_force_at_world_point(

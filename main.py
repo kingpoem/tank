@@ -2,7 +2,8 @@
 import sys
 from loguru import logger
 from game.gameLoop import GameLoop
-
+import cProfile
+import pstats
 
 
 def __configureLogger():
@@ -29,4 +30,8 @@ if __name__ == "__main__":
 
     # 开始游戏循环
     GameLoop.run()
+    # cProfile.run('GameLoop.run()','states')
+
+    # p = pstats.Stats('states')
+    # p.sort_stats(pstats.SortKey.TIME).print_stats(100)
     pass

@@ -1,5 +1,4 @@
-from threading import Timer
-from typing import Tuple
+
 from pygame import Surface, draw
 from pygame.event import Event
 from pymunk import Body, Circle, Shape, Space
@@ -15,7 +14,7 @@ BULLET_COLLISION_TYPE = 2
 class Bullet(GameObject):
 
     def __init__(self, initX: float, initY: float, initAngle: float):
-        def _vec_func(body: Body, gravity: Tuple[float, float], damping: float, dt: float):
+        def _vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             # body.velocity = body.rotation_vector * 300
             body.update_velocity(body, (0, 0), 1, dt)
             pass
@@ -39,7 +38,7 @@ class Bullet(GameObject):
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
             EventManager.cancelTimer(event)
 
-        # TimerManager.registerTimer(Timer(0.1, __delayCollisionType))
+
         EventManager.addHandler(event, lambda e: __delayCollisionTypeEventHandler())
         EventManager.setTimer(event, 100)
         self.shapes[0].elasticity = 1
