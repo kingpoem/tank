@@ -1,5 +1,11 @@
 .conda
 .venv
 .vscode
+
+dist
+build
 assets
+
 __pycache__
+
+*.spec

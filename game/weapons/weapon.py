@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from pygame import Surface
+
 from game.gameObject import GameObject
 
 
@@ -12,6 +14,13 @@ class Weapon(ABC):
 
     def __init__(self, owner: GameObject):
         self.owner = owner
+        pass
+
+
+    def render(self,screen : Surface):
+        """
+        在武器可以使用的时候，武器进行附加渲染
+        """
         pass
 
     @abstractmethod

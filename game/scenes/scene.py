@@ -1,16 +1,15 @@
-
-
 from abc import ABC, abstractmethod
 from pygame import Surface
 from pygame.event import Event
 
 from game.gameObjectManager import GameObjectManager
 
-class Scene(ABC):
 
+class Scene(ABC):
+    
     @property
     @abstractmethod
-    def uiSize(self) -> tuple[float,float]:
+    def ui(self) -> Surface:
         pass
 
     @property
@@ -19,20 +18,21 @@ class Scene(ABC):
         pass
 
     @abstractmethod
-    def process(self,event : Event):
+    def process(self, event: Event):
         """
         处理事件
         """
         pass
+
     @abstractmethod
     def update(self, delta: float):
         """
-        更新物体
+        更新场景
         """
         pass
-    @abstractmethod
+
     def render(self, screen: Surface):
         """
-        渲染画面
+        额外渲染画面
         """
         pass

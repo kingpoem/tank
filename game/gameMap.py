@@ -6,7 +6,16 @@ import pygame
 from pymunk import Body, Segment, Shape, Space, Poly
 
 from game.gameObject import GameObject
+from game.resources import BACKGROUND
 from structs.map import MAP_PLOT_TYPE, Map
+
+
+
+MAP_MAX_WIDTH = 25
+MAP_MAX_HEIGHT = 19
+
+MAP_MIN_WIDTH = 9
+MAP_MIN_HEIGHT = 7
 
 # 地图边距
 MARGIN_X = 40
@@ -22,15 +31,27 @@ WALL_WIDTH = 10
 
 # 游戏地图类
 class GameMap(GameObject):
+
+    __map : Map
+
+    @property
+    def width(self):
+        return self.__map.width
+    @property
+    def height(self):
+        return self.__map.height
+    
+    @property
+    def map(self):
+        return self.__map
+
     def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-        self.map = Map(width, height)
+        self.__map = Map(width, height)
 
         self.surface = pygame.Surface(
             (MARGIN_X * 2 + PLOT_WIDTH * width, MARGIN_Y * 2 + PLOT_HEIGHT * height)
         )
-        self.surface.fill((255, 255, 255))
+        self.surface.fill(BACKGROUND)
 
         def __getUpRectPoints(basePoint: tuple[float, float]) -> list[tuple[float, float]]:
             return [
@@ -66,33 +87,33 @@ class GameMap(GameObject):
 
         for x in range(self.width):
             for y in range(self.height):
-                if self.map[x, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                if self.__map[x, y] == MAP_PLOT_TYPE.MAP_BLOCK:
                     basePoint = (
                         MARGIN_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
                         MARGIN_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
                     )
                     # pygame.draw.circle(self.surface,(255,0,0),basePoint,int(WALL_WIDTH))
                     # 向上
-                    if y != 0 and self.map[x, y - 1] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if y != 0 and self.__map[x, y - 1] == MAP_PLOT_TYPE.MAP_BLOCK:
                         gfxdraw.filled_polygon(
                             self.surface,
                             __getUpRectPoints(basePoint),
                             (0, 0, 0),
                         )
-                    if y != self.height - 1 and self.map[x, y + 1] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if y != self.height - 1 and self.__map[x, y + 1] == MAP_PLOT_TYPE.MAP_BLOCK:
                         gfxdraw.filled_polygon(
                             self.surface,
                             __getDownRectPoints(basePoint),
                             (0, 0, 0),
                         )
                     # 向左
-                    if x != 0 and self.map[x - 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if x != 0 and self.__map[x - 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
                         gfxdraw.filled_polygon(
                             self.surface,
                             __getLeftRectPoints(basePoint),
                             (0, 0, 0),
                         )
-                    if x != self.width - 1 and self.map[x + 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if x != self.width - 1 and self.__map[x + 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
                         gfxdraw.filled_polygon(
                             self.surface,
                             __getRightRectPoints(basePoint),
@@ -102,14 +123,14 @@ class GameMap(GameObject):
         self.shapes = []
         for x in range(self.width):
             for y in range(self.height):
-                if self.map[x, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                if self.__map[x, y] == MAP_PLOT_TYPE.MAP_BLOCK:
                     basePoint = (
                         MARGIN_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
                         MARGIN_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
                     )
 
                     # 向上
-                    if y != 0 and self.map[x, y - 1] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if y != 0 and self.__map[x, y - 1] == MAP_PLOT_TYPE.MAP_BLOCK:
                         self.shapes.append(
                             Poly(
                                 self.body,
@@ -133,7 +154,7 @@ class GameMap(GameObject):
                                 ],
                             )
                         )
-                    if y != self.height - 1 and self.map[x, y + 1] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if y != self.height - 1 and self.__map[x, y + 1] == MAP_PLOT_TYPE.MAP_BLOCK:
                         self.shapes.append(
                             Poly(
                                 self.body,
@@ -158,7 +179,7 @@ class GameMap(GameObject):
                             )
                         )
                     # 向左
-                    if x != 0 and self.map[x - 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if x != 0 and self.__map[x - 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
                         self.shapes.append(
                             Poly(
                                 self.body,
@@ -182,7 +203,7 @@ class GameMap(GameObject):
                                 ],
                             )
                         )
-                    if x != self.width - 1 and self.map[x + 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                    if x != self.width - 1 and self.__map[x + 1, y] == MAP_PLOT_TYPE.MAP_BLOCK:
                         self.shapes.append(
                             Poly(
                                 self.body,

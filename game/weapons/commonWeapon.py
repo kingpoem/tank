@@ -1,7 +1,6 @@
-
-
 from loguru import logger
 from game.bullets.bullet import Bullet
+from game.bullets.missile import MISSILE_TYPE, Missile
 from game.eventManager import EventManager
 from game.sceneManager import SceneManager
 from game.tank import Tank
@@ -17,20 +16,18 @@ class CommonWeapon(Weapon):
     MAX_BULLET = 5
     __shootBulletCount = 0
 
-
-
     def fire(self):
         BULLET_DISAPPEAR_TIME_MS = 8 * 1000
         BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 - 4
 
         if self.owner.body.space:
 
-            
             self.__shootBulletCount += 1
             bullet = Bullet(
                 self.owner.body.position.x + self.owner.body.rotation_vector.x * BULLET_SHOOT_DIS,
                 self.owner.body.position.y + self.owner.body.rotation_vector.y * BULLET_SHOOT_DIS,
                 self.owner.body.angle,
+                # MISSILE_TYPE.RED,
             )
             event = EventManager.allocateEventType()
 
@@ -54,6 +51,6 @@ class CommonWeapon(Weapon):
 
     def canFire(self) -> bool:
         return self.__shootBulletCount < CommonWeapon.MAX_BULLET
-    
+
     def canUse(self) -> bool:
         return True

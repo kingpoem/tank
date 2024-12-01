@@ -1,6 +1,7 @@
 from loguru import logger
 from pygame import USEREVENT
-from pygame.event import Event
+import pygame
+from pygame.event import Event, post
 from pygame.time import set_timer
 from typing import Callable
 
@@ -34,22 +35,23 @@ class EventManager:
         set_timer(eventType, 0, 0)
 
     @staticmethod
+    def raiseEvent(eventType: int):
+        post(Event(eventType))
+
+    @staticmethod
     def handleEvent(event: Event):
+        tasks: list[Callable[[Event], None]] = []
         if event.type in EventManager.__eventHandlers:
             for handler in EventManager.__eventHandlers[event.type]:
-                try:
-                    handler(event)
-                except Exception:
-                    logger.exception("事件处理器出错，已跳过")
+                tasks.append(handler)
+        for task in tasks:
+            try:
+                task(event)
+            except Exception:
+                logger.exception("事件处理器出错，已跳过")
 
     @staticmethod
     def allocateEventType():
         eventType = EventManager.__nextEventType
         EventManager.__nextEventType += 1
         return eventType
-    
-    # @staticmethod
-    # def allocateEventIdBy(obj : object):
-    #     eventId = EventManager.__nextEventId + id(obj)
-    #     EventManager.__nextEventId = eventId + 1
-    #     return eventId

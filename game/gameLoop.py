@@ -9,7 +9,6 @@ from pygame import Surface
 
 from game.eventManager import EventManager
 from game.resources import BACKGROUND, FONT_COLOR
-from game.gameSpace import GameSpace
 from pymunk.pygame_util import DrawOptions
 
 from game.sceneManager import SceneManager
@@ -35,8 +34,7 @@ class GameLoop:
     font: pygame.freetype.Font
     """字体"""
 
-
-    __debugOptions : DrawOptions
+    __debugOptions: DrawOptions
 
     def __init__(self):
         raise NotImplementedError("GameLoop是静态类不允许实例化")
@@ -49,22 +47,13 @@ class GameLoop:
         pygame.init()
 
         # 初始化游戏屏幕
-        GameLoop.screen = pygame.display.set_mode((1920,1080))
+        GameLoop.screen = pygame.display.set_mode((1440, 1280))
 
         # 初始化渲染字体
         GameLoop.font = pygame.freetype.Font("C:\\Windows\\fonts\\msyh.ttc", 24)
 
-        # 初始化物理世界
-        GameSpace.initSpace()
-
         # 初始化场景
         SceneManager.init()
-
-        GameLoop.screen = pygame.display.set_mode(
-            SceneManager.getCurrentScene().uiSize,
-            # pygame.NOFRAME,
-        )
-        
 
         pygame.display.set_caption("Tank Game")
 
@@ -87,9 +76,8 @@ class GameLoop:
         # 初始化游戏时钟
         clock = pygame.time.Clock()
 
-        GameLoop.screen.fill(BACKGROUND)
         while GameLoop.isRunning:
-            
+
             GameLoop.fps = clock.get_fps()
             if GameLoop.fps != 0:
                 GameLoop.delta = 1 / GameLoop.fps
@@ -99,10 +87,18 @@ class GameLoop:
                 GameLoop.__onGameQuit()
                 break
 
-            # 更新物理世界
-            GameSpace.updateSpace(GameLoop.delta)
             SceneManager.getCurrentScene().update(GameLoop.delta)
 
+            GameLoop.screen.fill(BACKGROUND)
+            screen = GameLoop.screen
+            ui = SceneManager.getCurrentScene().ui
+            GameLoop.screen.blit(
+                SceneManager.getCurrentScene().ui,
+                (
+                    (screen.get_width() - ui.get_width()) / 2,
+                    (screen.get_height() - ui.get_height()) / 2,
+                ),
+            )
             SceneManager.getCurrentScene().render(GameLoop.screen)
             # if (space := GameSpace.getSpace()) is not None:
             #     space.debug_draw(GameLoop.__debugOptions)

@@ -1,31 +1,44 @@
-
-
 from enum import Enum
+
 from game.scenes.scene import Scene
 
+
 class SCENE_TYPE(Enum):
-    GAME_SCENE = 0
+    START_SCENE = 0
+    GAME_SCENE = 1
+
 
 class SceneManager:
 
-    __sceneList : list[Scene]
+    __sceneList: dict[SCENE_TYPE, Scene]
     __currentSceneType: SCENE_TYPE
-
-
 
     def __init__(self):
         raise NotImplementedError("SceneManager不允许被实例化")
-    
+
     @staticmethod
     def init():
-        from game.scenes.gameScene import GameScene
-        SceneManager.__sceneList = [GameScene()]
-        SceneManager.__currentSceneType = SCENE_TYPE.GAME_SCENE
+        SceneManager.__currentSceneType = SCENE_TYPE.START_SCENE
+        SceneManager.__sceneList = {
+            SceneManager.__currentSceneType: SceneManager.__sceneTypeToScene(
+                SceneManager.__currentSceneType
+            )
+        }
 
     @staticmethod
     def getCurrentScene():
-        return SceneManager.__sceneList[SceneManager.__currentSceneType.value]
-    
+        return SceneManager.__sceneList[SceneManager.__currentSceneType]
+
     @staticmethod
-    def changeScene(sceneType : SCENE_TYPE):
+    def changeScene(sceneType: SCENE_TYPE):
         SceneManager.__currentSceneType = sceneType
+        if sceneType not in SceneManager.__sceneList:
+            SceneManager.__sceneList[sceneType] = SceneManager.__sceneTypeToScene(sceneType)
+
+    @staticmethod
+    def __sceneTypeToScene(sceneType: SCENE_TYPE):
+        from game.scenes.startScene import StartScene
+        from game.scenes.gameScene import GameScene
+
+        SCENE_LIST: list[type[Scene]] = [StartScene, GameScene]
+        return SCENE_LIST[sceneType.value]()

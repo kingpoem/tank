@@ -23,12 +23,22 @@ class WALL_DIRECTION(Enum):
     WALL_DOWN = (3,)
 
 
-# 地图类
 class Map:
+    """
+    地图数据类
+    """
 
     __width: int
     __height: int
     __mapData: list[list[MAP_PLOT_TYPE]]
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
 
     def __init__(self, width: int, height: int):
         self.__width = width
@@ -37,18 +47,13 @@ class Map:
             [MAP_PLOT_TYPE.MAP_EMPTY for x in range(self.__width)] for y in range(self.__height)
         ]
         self.__doRandomPrim()
+        self.__randomDeleteWall()
 
     def __getitem__(self, index: tuple[int, int]):
         return self.__mapData[index[1]][index[0]]
 
     def __setitem__(self, index: tuple[int, int], plotType: MAP_PLOT_TYPE):
         self.__mapData[index[1]][index[0]] = plotType
-
-    def getWidth(self) -> int:
-        return self.__width
-
-    def getHeight(self) -> int:
-        return self.__height
 
     def resetMap(self, plotType: MAP_PLOT_TYPE):
         for y in range(self.__height):
@@ -119,3 +124,13 @@ class Map:
         # 将所有map元素先设置为墙壁
         self.resetMap(MAP_PLOT_TYPE.MAP_BLOCK)
         self.__randomPrim((self.__width - 1) // 2, (self.__height - 1) // 2)
+
+    def __randomDeleteWall(self):
+        delNum = randint(1, min(self.__width,self.__height) // 2)
+        for _ in range(delNum):
+            x = randint(1, self.__width - 2)
+            y = randint(1, self.__height - 2)
+            while self[x, y] == MAP_PLOT_TYPE.MAP_EMPTY:
+                x = randint(1, self.__width - 2)
+                y = randint(1, self.__height - 2)
+            self[x, y] = MAP_PLOT_TYPE.MAP_EMPTY

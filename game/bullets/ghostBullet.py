@@ -1,8 +1,9 @@
 import numpy as np
 from pygame import Surface, draw, transform
-from pymunk import Body, Poly
+from pymunk import Body, Poly, Vec2d
 from game.bullets.bullet import BULLET_COLLISION_TYPE, Bullet
 from game.eventManager import EventManager
+from game.resources import BACKGROUND
 
 
 class GhostBullet(Bullet):
@@ -20,14 +21,14 @@ class GhostBullet(Bullet):
         self.body.velocity = self.body.rotation_vector * 300
         self.body.velocity_func = _vec_func
 
-        self.shapes = [Poly.create_box(self.body, (5, 2))]
+        self.shapes = [Poly.create_box(self.body, (20, 4))]
 
         self.surface = Surface((20, 4))
         self.surface.fill((255, 255, 255))
         self.surface.set_colorkey((255, 255, 255))
         draw.polygon(
             self.surface,
-            (218, 98,125),
+            (218, 98, 125),
             [
                 (0, 0),
                 (self.surface.get_width(), 0),
@@ -46,9 +47,7 @@ class GhostBullet(Bullet):
         EventManager.setTimer(event, 100)
         self.shapes[0].elasticity = 1
 
-        pass
-
     def render(self, screen: Surface):
-        if self.body.space:
-            r_s = transform.rotate(self.surface, np.rad2deg(-self.body.angle))
-            screen.blit(r_s, r_s.get_rect(center=self.body.position))
+        vec : Vec2d = self.body.velocity
+        r_s = transform.rotate(self.surface, -vec.angle_degrees)
+        screen.blit(r_s, r_s.get_rect(center=self.body.position))

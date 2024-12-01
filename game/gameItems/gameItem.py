@@ -48,8 +48,8 @@ class GameItem(GameObject, ABC):
         tank = SceneManager.getCurrentScene().gameObjectManager.getGameObjectByBody(
             arbiter.shapes[1].body
         )
-        if isinstance(tank, Tank) and isinstance(item, GameItem):
-            GameItem.onTouched(tank)
+        if isinstance(item, GameItem) and isinstance(tank, Tank):
+            item.onTouched(tank)
             SceneManager.getCurrentScene().gameObjectManager.removeObject(item)
         logger.debug(f"道具被坦克碰撞 {item} {tank}")
         return True

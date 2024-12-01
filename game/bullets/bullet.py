@@ -5,7 +5,6 @@ from pymunk import Body, Circle, Shape, Space
 
 from game.eventManager import EventManager
 from game.gameObject import GameObject
-from game.gameSpace import GameSpace
 
 
 BULLET_COLLISION_TYPE = 2
@@ -15,8 +14,8 @@ class Bullet(GameObject):
 
     def __init__(self, initX: float, initY: float, initAngle: float):
         def _vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
-            # body.velocity = body.rotation_vector * 300
             body.update_velocity(body, (0, 0), 1, dt)
+            # body.velocity = body.rotation_vector * 300
             pass
 
         self.body = Body(body_type=Body.DYNAMIC)
