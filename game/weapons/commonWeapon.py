@@ -33,9 +33,10 @@ class CommonWeapon(Weapon):
 
             # 超过指定时间子弹自动消失
             def __bulletOutOfTimeDisappear(bullet: Bullet) -> None:
-                if SceneManager.getCurrentScene().gameObjectManager.containObject(bullet):
-                    SceneManager.getCurrentScene().gameObjectManager.removeObject(bullet)
-                    logger.debug(f"子弹超时消失 {bullet}")
+                if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+                    if gameObjectManager.containObject(bullet):
+                        gameObjectManager.removeObject(bullet)
+                        logger.debug(f"子弹超时消失 {bullet}")
                 EventManager.cancelTimer(event)
 
             def __onBulletDisappear():
@@ -43,7 +44,8 @@ class CommonWeapon(Weapon):
                 EventManager.cancelTimer(event)
 
             bullet.Removed = __onBulletDisappear
-            SceneManager.getCurrentScene().gameObjectManager.registerObject(bullet)
+            if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+                gameObjectManager.registerObject(bullet)
             EventManager.addHandler(event, lambda e: __bulletOutOfTimeDisappear(bullet))
             EventManager.setTimer(event, BULLET_DISAPPEAR_TIME_MS)
 

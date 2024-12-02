@@ -73,6 +73,7 @@ class Missile(Bullet,Operateable):
         self.body.angular_velocity = 150 * delta
 
     def onShoot(self):
-        SceneManager.getCurrentScene().gameObjectManager.removeObject(self)
+        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+            gameObjectManager.removeObject(self)
         logger.debug("导弹主动销毁")
 

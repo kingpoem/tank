@@ -100,8 +100,9 @@ class GameLoop:
                 ),
             )
             SceneManager.getCurrentScene().render(GameLoop.screen)
-            # if (space := GameSpace.getSpace()) is not None:
-            #     space.debug_draw(GameLoop.__debugOptions)
+            
+            if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+                gameObjectManager.space.debug_draw(GameLoop.__debugOptions)
 
             # debug
             # FPS

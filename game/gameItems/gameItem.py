@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+import math
 from loguru import logger
-from pygame import Surface
+from pygame import Surface,transform
 from pymunk import Arbiter, Body, CollisionHandler, Poly, ShapeFilter, Space
 from game.gameObject import GameObject
 from game.sceneManager import SceneManager
@@ -19,6 +20,8 @@ class GameItem(GameObject, ABC):
 
     def __init__(self, initX: float, initY: float):
         self.surface = Surface((30, 30))
+        self.surface.set_colorkey((0, 0, 0))
+        
         self.surface.fill((130, 130, 130))
 
         self.body = Body(body_type=Body.KINEMATIC)
@@ -31,7 +34,8 @@ class GameItem(GameObject, ABC):
             # shape.filter = ShapeFilter(categories=0b0001)
 
     def render(self, screen: Surface):
-        screen.blit(self.surface, self.surface.get_rect(center=self.body.position))
+        r = transform.rotate(self.surface,math.degrees(-self.body.angle))
+        screen.blit(r, r.get_rect(center=self.body.position))
 
     def setBody(self, space: Space):
         super().setBody(space)
@@ -42,16 +46,18 @@ class GameItem(GameObject, ABC):
 
     @staticmethod
     def __onTankTouched(arbiter: Arbiter, space: Space, data: dict[Any, Any]):
-        item = SceneManager.getCurrentScene().gameObjectManager.getGameObjectByBody(
-            arbiter.shapes[0].body
-        )
-        tank = SceneManager.getCurrentScene().gameObjectManager.getGameObjectByBody(
-            arbiter.shapes[1].body
-        )
-        if isinstance(item, GameItem) and isinstance(tank, Tank):
-            item.onTouched(tank)
-            SceneManager.getCurrentScene().gameObjectManager.removeObject(item)
-        logger.debug(f"道具被坦克碰撞 {item} {tank}")
+        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+
+            item = gameObjectManager.getGameObjectByBody(
+                arbiter.shapes[0].body
+            )
+            tank = gameObjectManager.getGameObjectByBody(
+                arbiter.shapes[1].body
+            )
+            if isinstance(item, GameItem) and isinstance(tank, Tank):
+                item.onTouched(tank)
+                gameObjectManager.removeObject(item)
+            logger.debug(f"道具被坦克碰撞 {item} {tank}")
         return True
 
     @staticmethod

@@ -51,13 +51,13 @@ class RemoteControlMissileWeapon(Weapon):
             # 超过指定时间子弹自动消失
             def __bulletOutOfTimeDisappear() -> None:
                 if (
-                    self.__missile is not None
-                    and SceneManager.getCurrentScene().gameObjectManager.containObject(
+                    gameObjectManager := SceneManager.getCurrentScene().gameObjectManager
+                ) is not None:
+                    if self.__missile is not None and gameObjectManager.containObject(
                         self.__missile
-                    )
-                ):
-                    SceneManager.getCurrentScene().gameObjectManager.removeObject(self.__missile)
-                    logger.debug(f"导弹超时消失 {self.__missile}")
+                    ):
+                        gameObjectManager.removeObject(self.__missile)
+                        logger.debug(f"导弹超时消失 {self.__missile}")
                 EventManager.cancelTimer(self.__MISSILE_DISAPPEAR_EVENT_TYPE)
 
             o = self.owner.operation
@@ -71,7 +71,8 @@ class RemoteControlMissileWeapon(Weapon):
                 self.owner.operation = None
                 self.__missile.operation = o
                 self.__missile.Removed = __onBulletDisappear
-                SceneManager.getCurrentScene().gameObjectManager.registerObject(self.__missile)
+                if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+                    gameObjectManager.registerObject(self.__missile)
                 EventManager.addHandler(
                     self.__MISSILE_DISAPPEAR_EVENT_TYPE, lambda e: __bulletOutOfTimeDisappear()
                 )

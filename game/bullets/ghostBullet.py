@@ -1,3 +1,5 @@
+import math
+from selectors import SelectorKey
 import numpy as np
 from pygame import Surface, draw, transform
 from pymunk import Body, Poly, Vec2d
@@ -17,7 +19,7 @@ class GhostBullet(Bullet):
         self.body = Body(body_type=Body.KINEMATIC)
         self.body.position = (initX, initY)
         self.body.angle = initAngle
-        self.body.moment = 100
+        # self.body.moment = float('inf')
         self.body.velocity = self.body.rotation_vector * 300
         self.body.velocity_func = _vec_func
 
@@ -48,6 +50,5 @@ class GhostBullet(Bullet):
         self.shapes[0].elasticity = 1
 
     def render(self, screen: Surface):
-        vec : Vec2d = self.body.velocity
-        r_s = transform.rotate(self.surface, -vec.angle_degrees)
+        r_s = transform.rotate(self.surface, math.degrees(-self.body.angle))
         screen.blit(r_s, r_s.get_rect(center=self.body.position))

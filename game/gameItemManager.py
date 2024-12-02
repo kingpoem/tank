@@ -59,7 +59,7 @@ class GameItemManager:
 
         item = random.choice(GameItemManager.GAME_ITEMS_LIST)(x, y)
         # 添加一点随机位置角度偏移
-        item.body.angle += random.uniform(-0.1, 0.1)
+        item.body.angle += random.uniform(-0.5, 0.5)
         item.body.position += (random.uniform(-5, 5), random.uniform(-5, 5))
 
         item.Removed = lambda: self.__gameItems.remove(item)

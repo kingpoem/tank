@@ -1,6 +1,6 @@
 from email.mime import base
 from time import sleep
-from pygame import K_DOWN, K_SPACE, K_UP, KEYDOWN, Rect, Surface, gfxdraw
+from pygame import K_DOWN, K_KP_ENTER, K_RETURN, K_SPACE, K_UP, KEYDOWN, KSCAN_KP_ENTER, Rect, Surface, gfxdraw
 from pygame.freetype import Font
 from pygame.event import Event
 from pymunk import Space
@@ -29,8 +29,8 @@ class StartScene(Scene):
         return self.__ui
 
     @property
-    def gameObjectManager(self) -> GameObjectManager:
-        raise NotImplementedError("主界面不存在GameObjectManager")
+    def gameObjectManager(self) -> GameObjectManager | None:
+        return None
 
     def __init__(self):
         titleFont = Font("C:\\Windows\\Fonts\\msyh.ttc", 72)
@@ -43,7 +43,7 @@ class StartScene(Scene):
 
     def process(self, event: Event):
         if event.type == KEYDOWN:
-            if event.key == K_SPACE:
+            if event.key == K_SPACE or event.key == K_RETURN:
                 SceneManager.changeScene(SCENE_TYPE.GAME_SCENE)
             elif event.key == K_DOWN:
                 self.__selectIndex = (self.__selectIndex + 1) % 2
@@ -74,11 +74,11 @@ class StartScene(Scene):
                 upPoint = (
                     rightPoint[0] - 16,
                     rightPoint[1]
-                    - abs(StartScene.__SELECT_SIGN_MAX_HEIGHT - self.__selectSignHeight) / 2,
+                    - abs(StartScene.__SELECT_SIGN_MAX_HEIGHT - 0) / 2,
                 )
                 downPoint = (
                     rightPoint[0] - 16,
-                    rightPoint[1] + abs(StartScene.__SELECT_SIGN_MAX_HEIGHT - self.__selectSignHeight) / 2,
+                    rightPoint[1] + abs(StartScene.__SELECT_SIGN_MAX_HEIGHT - 0) / 2,
                 )
                 gfxdraw.filled_polygon(self.__ui, (rightPoint, upPoint, downPoint), FONT_COLOR)
         pass

@@ -14,7 +14,7 @@ class Scene(ABC):
 
     @property
     @abstractmethod
-    def gameObjectManager(self) -> GameObjectManager:
+    def gameObjectManager(self) -> GameObjectManager | None:
         pass
 
     @abstractmethod

@@ -170,18 +170,18 @@ class Tank(GameObject, Shootable, Operateable):
 
     @staticmethod
     def __onBulletCollision(arbiter: Arbiter, space: Space, data: dict[Any, Any]):
-        # self.removeBody(Space)
-        tank = SceneManager.getCurrentScene().gameObjectManager.getGameObjectByBody(
-            arbiter.shapes[0].body
-        )
-        bullet = SceneManager.getCurrentScene().gameObjectManager.getGameObjectByBody(
-            arbiter.shapes[1].body
-        )
-        if bullet is not None:
-            SceneManager.getCurrentScene().gameObjectManager.removeObject(bullet)
-        if tank is not None:
-            SceneManager.getCurrentScene().gameObjectManager.removeObject(tank)
-        logger.debug(f"坦克被子弹击中 {tank} {bullet}")
+        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+            tank = gameObjectManager.getGameObjectByBody(
+                arbiter.shapes[0].body
+            )
+            bullet = gameObjectManager.getGameObjectByBody(
+                arbiter.shapes[1].body
+            )
+            if bullet is not None:
+                gameObjectManager.removeObject(bullet)
+            if tank is not None:
+                gameObjectManager.removeObject(tank)
+            logger.debug(f"坦克被子弹击中 {tank} {bullet}")
 
     def onForward(self, delta: float):
         self.body.apply_force_at_world_point(
@@ -200,5 +200,6 @@ class Tank(GameObject, Shootable, Operateable):
         self.body.angular_velocity = Tank.ROTATE_SPEED * delta
 
     def onShoot(self):
-        if SceneManager.getCurrentScene().gameObjectManager.containObject(self):
-            self.shoot()
+        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+            if gameObjectManager.containObject(self):
+                self.shoot()

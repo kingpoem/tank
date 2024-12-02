@@ -62,7 +62,7 @@ class GameScene(Scene):
         return self.__ui
 
     @property
-    def gameObjectManager(self) -> GameObjectManager:
+    def gameObjectManager(self) -> GameObjectManager | None:
         return self.__gameObjectManager
 
     def __init__(self):
