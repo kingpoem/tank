@@ -2,14 +2,16 @@ import math
 from random import randint
 import random
 from loguru import logger
-from pygame import Rect, Surface
+from pygame import K_DOWN, K_ESCAPE, KEYDOWN, QUIT, Rect, Surface
 import pygame
 from pygame.event import Event
 from pygame.freetype import Font
 from pymunk import Space
 
 # from game.gameLoop import GameLoop
+from game.controls.selectionMenu import SelectionMenu
 from game.operateable import Operateable, Operation
+from game.sceneManager import SCENE_TYPE, SceneManager
 from game.weapons.commonWeapon import CommonWeapon
 from game.eventManager import EventManager
 from game.gameItems.gameItem import GameItem
@@ -26,7 +28,7 @@ from game.gameMap import (
     PLOT_WIDTH,
     GameMap,
 )
-from game.resources import BACKGROUND, FONT_COLOR
+from game.gameResources import BACKGROUND, FONT_COLOR, MENU_BACKGROUND, easeLinear
 from game.scenes.scene import Scene
 from game.tank import TANK_STYLE, Tank
 from game.weapons.weaponFactory import WEAPON_TYPE, WeaponFactory
@@ -48,6 +50,7 @@ class GameScene(Scene):
     __ui: Surface
     __gameMapUI: Surface
     __scoreUI: Surface
+    __gameMenu: SelectionMenu
 
     __font: Font
 
@@ -56,6 +59,7 @@ class GameScene(Scene):
 
     __isGameOver: bool = False
     GAME_OVER_EVENT_TYPE: int = EventManager.allocateEventType()
+
 
     @property
     def ui(self) -> Surface:
@@ -88,6 +92,13 @@ class GameScene(Scene):
                 self.__gameMapUI.get_height() + self.__scoreUI.get_height(),
             )
         )
+
+        self.__gameMenu = SelectionMenu(self.__ui, 1080, 480)
+        self.__gameMenu.selection = [
+            ("返回主菜单", lambda: SceneManager.changeScene(SCENE_TYPE.START_SCENE)),
+            ("退出游戏",lambda:EventManager.raiseEvent(QUIT))
+        ]
+
         # 决定渲染顺序
         self.__gameObjectManager.registerObject(self.__gameMap)
         self.__gameObjectManager.registerObject(self.__red_tank)
@@ -129,13 +140,17 @@ class GameScene(Scene):
         self.__green_tank.body.position += (random.uniform(-5, 5), random.uniform(-5, 5))
 
         self.__red_tank.weapon = WeaponFactory.createWeapon(
-            self.__red_tank, WEAPON_TYPE.GHOST_WEAPON
+            self.__red_tank, WEAPON_TYPE.COMMON_WEAPON
         )
         self.__green_tank.weapon = WeaponFactory.createWeapon(
             self.__green_tank, WEAPON_TYPE.COMMON_WEAPON
         )
 
     def process(self, event: Event):
+        if self.__gameMenu.isMenuShow:
+            self.__gameMenu.process(event)
+            return
+
         if event.type == self.GAME_OVER_EVENT_TYPE:
             if self.__gameObjectManager.containObject(self.__red_tank):
                 self.__redScore += 1
@@ -150,8 +165,9 @@ class GameScene(Scene):
             self.__gameObjectManager.registerObject(self.__red_tank)
             self.__gameObjectManager.registerObject(self.__green_tank)
             self.__isGameOver = False
-
-        pass
+        elif event.type == KEYDOWN:
+            if event.key == K_ESCAPE:
+                self.__gameMenu.show()
 
     def update(self, delta: float):
         if self.__isGameOver is False and (
@@ -160,13 +176,20 @@ class GameScene(Scene):
         ):
             self.__isGameOver = True
             EventManager.setTimer(self.GAME_OVER_EVENT_TYPE, 3000)
-        
 
-        self.__gameObjectManager.updateObjects(delta)
+        # 当打开游戏菜单时，不更新物体
+        if self.__gameMenu.isMenuShow is False:
+            self.__gameObjectManager.updateObjects(delta)
         # 更新画面
+        self.__updateGameMap(delta)
+        self.__updateScoreBoard(delta)
+        self.__updateGameMenu(delta)
 
+    def __updateGameMap(self,delta : float):
         self.__gameMapUI.fill(BACKGROUND)
         self.__gameObjectManager.renderObjects(self.__gameMapUI)
+
+    def __updateScoreBoard(self,delta : float):
         self.__scoreUI.fill(BACKGROUND)
         self.__scoreUI.blit(
             self.__red_tank.surface,
@@ -213,4 +236,6 @@ class GameScene(Scene):
             ),
         )
         self.__ui.blit(self.__scoreUI, (0, self.__gameMapUI.get_height()))
-        pass
+
+    def __updateGameMenu(self, delta: float):
+        self.__gameMenu.update(delta)

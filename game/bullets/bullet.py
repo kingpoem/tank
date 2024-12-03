@@ -25,7 +25,7 @@ class Bullet(GameObject):
         self.body.mass = 1
 
         # self.body.velocity = (0,0)
-        self.body.velocity = self.body.rotation_vector * 300
+        self.body.velocity = self.body.rotation_vector * 200
         self.body.velocity_func = _vec_func
 
         self.shapes = [Circle(self.body, 4)]

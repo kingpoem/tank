@@ -1,5 +1,0 @@
-
-
-BACKGROUND = (240, 240, 240)
-FONT_COLOR = (15, 15, 15)
-

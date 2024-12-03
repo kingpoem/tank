@@ -5,7 +5,7 @@ from pygame import Surface, draw, transform
 from pymunk import Body, Poly, Vec2d
 from game.bullets.bullet import BULLET_COLLISION_TYPE, Bullet
 from game.eventManager import EventManager
-from game.resources import BACKGROUND
+from game.gameResources import BACKGROUND
 
 
 class GhostBullet(Bullet):

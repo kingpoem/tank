@@ -6,7 +6,7 @@ import pygame
 from pymunk import Body, Segment, Shape, Space, Poly
 
 from game.gameObject import GameObject
-from game.resources import BACKGROUND
+from game.gameResources import BACKGROUND
 from structs.map import MAP_PLOT_TYPE, Map
 
 

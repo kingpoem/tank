@@ -18,7 +18,7 @@ class MISSILE_TYPE(Enum):
 
 class Missile(Bullet,Operateable):
 
-    MISSILE_SPEED = 300
+    MISSILE_SPEED = 200
     MISSILE_WIDTH = 24
 
     def __init__(self, initX: float, initY: float, initAngle: float, missileType: MISSILE_TYPE):

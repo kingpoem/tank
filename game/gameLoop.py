@@ -1,4 +1,5 @@
 import os
+
 import sys
 from loguru import logger
 import pygame
@@ -8,7 +9,7 @@ from pygame import Surface
 
 
 from game.eventManager import EventManager
-from game.resources import BACKGROUND, FONT_COLOR
+from game.gameResources import BACKGROUND, FONT_COLOR
 from pymunk.pygame_util import DrawOptions
 
 from game.sceneManager import SceneManager
@@ -101,8 +102,8 @@ class GameLoop:
             )
             SceneManager.getCurrentScene().render(GameLoop.screen)
             
-            if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-                gameObjectManager.space.debug_draw(GameLoop.__debugOptions)
+            # if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+            #     gameObjectManager.space.debug_draw(GameLoop.__debugOptions)
 
             # debug
             # FPS

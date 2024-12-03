@@ -30,10 +30,15 @@ class SceneManager:
         return SceneManager.__sceneList[SceneManager.__currentSceneType]
 
     @staticmethod
-    def changeScene(sceneType: SCENE_TYPE):
+    def changeScene(sceneType: SCENE_TYPE,delOtherScene : bool = True):
         SceneManager.__currentSceneType = sceneType
         if sceneType not in SceneManager.__sceneList:
             SceneManager.__sceneList[sceneType] = SceneManager.__sceneTypeToScene(sceneType)
+        if delOtherScene:
+            other_scene = [cs for cs in SceneManager.__sceneList if not cs == sceneType]
+            for scene in other_scene:
+                del SceneManager.__sceneList[scene]
+
 
     @staticmethod
     def __sceneTypeToScene(sceneType: SCENE_TYPE):
