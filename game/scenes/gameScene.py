@@ -9,7 +9,7 @@ from pygame.freetype import Font
 from pymunk import Space
 
 # from game.gameLoop import GameLoop
-from game.controls.selectionMenu import SelectionMenu
+from game.controls.selectionMenu import Selection, SelectionMenu
 from game.operateable import Operateable, Operation
 from game.sceneManager import SCENE_TYPE, SceneManager
 from game.weapons.commonWeapon import CommonWeapon
@@ -60,7 +60,6 @@ class GameScene(Scene):
     __isGameOver: bool = False
     GAME_OVER_EVENT_TYPE: int = EventManager.allocateEventType()
 
-
     @property
     def ui(self) -> Surface:
         return self.__ui
@@ -93,11 +92,17 @@ class GameScene(Scene):
             )
         )
 
-        self.__gameMenu = SelectionMenu(self.__ui, 1080, 480)
-        self.__gameMenu.selection = [
-            ("返回主菜单", lambda: SceneManager.changeScene(SCENE_TYPE.START_SCENE)),
-            ("退出游戏",lambda:EventManager.raiseEvent(QUIT))
-        ]
+        self.__gameMenu = SelectionMenu(
+            self.__ui,
+            1080,
+            480,
+            [
+                Selection(
+                    lambda: "返回主菜单", lambda: SceneManager.changeScene(SCENE_TYPE.START_SCENE)
+                ),
+                Selection(lambda: "退出游戏", lambda: EventManager.raiseEventType(QUIT)),
+            ],
+        )
 
         # 决定渲染顺序
         self.__gameObjectManager.registerObject(self.__gameMap)
@@ -140,7 +145,7 @@ class GameScene(Scene):
         self.__green_tank.body.position += (random.uniform(-5, 5), random.uniform(-5, 5))
 
         self.__red_tank.weapon = WeaponFactory.createWeapon(
-            self.__red_tank, WEAPON_TYPE.COMMON_WEAPON
+            self.__red_tank, WEAPON_TYPE.MISSILE_WEAPON
         )
         self.__green_tank.weapon = WeaponFactory.createWeapon(
             self.__green_tank, WEAPON_TYPE.COMMON_WEAPON
@@ -185,11 +190,11 @@ class GameScene(Scene):
         self.__updateScoreBoard(delta)
         self.__updateGameMenu(delta)
 
-    def __updateGameMap(self,delta : float):
+    def __updateGameMap(self, delta: float):
         self.__gameMapUI.fill(BACKGROUND)
         self.__gameObjectManager.renderObjects(self.__gameMapUI)
 
-    def __updateScoreBoard(self,delta : float):
+    def __updateScoreBoard(self, delta: float):
         self.__scoreUI.fill(BACKGROUND)
         self.__scoreUI.blit(
             self.__red_tank.surface,
@@ -239,3 +244,10 @@ class GameScene(Scene):
 
     def __updateGameMenu(self, delta: float):
         self.__gameMenu.update(delta)
+        if self.__gameMenu.isMenuShow and not EventManager.isTimerPaused():
+            EventManager.pauseTimer()
+        elif not self.__gameMenu.isMenuShow and EventManager.isTimerPaused():
+            EventManager.resumeTimer()
+
+    def onLeaved(self):
+        ...

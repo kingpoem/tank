@@ -1,7 +1,9 @@
+import cProfile
 from email.mime import base
 from mimetypes import suffix_map
+from select import select
 from time import sleep
-from typing import Callable
+from typing import Any, Callable
 from loguru import logger
 from pygame import (
     K_DOWN,
@@ -21,10 +23,20 @@ from pygame.freetype import Font
 from pygame.event import Event
 from pymunk import Space
 from pygame import image, transform
-from game.controls.selectionMenu import SelectionMenu
+from game.controls.selectionControl import SelectionControl
+from game.controls.selectionMenu import Selection, SelectionMenu
 from game.eventManager import EventManager
 from game.gameObjectManager import GameObjectManager
-from game.gameResources import BACKGROUND, FONT_COLOR, MENU_BACKGROUND, easeLinear, getFont
+from game.gameResources import (
+    BACKGROUND,
+    FONT_COLOR,
+    LARGE_FONT,
+    LARGE_TITLE_FONT,
+    MEDIAN_FONT,
+    MENU_BACKGROUND,
+    easeLinear,
+)
+from game.gameSettings import GlobalSettingsManager
 from game.sceneManager import SCENE_TYPE, SceneManager
 from game.scenes.scene import Scene
 
@@ -37,12 +49,13 @@ class StartScene(Scene):
     # __settingMenu: Surface
 
     __selectIndex: int = 0
-    __selections: list[tuple[str, Callable[[], None]]]
-    __selectionDesFontSize: dict[str, float] = {}
+    # __selections: list[tuple[str, Callable[[], None]]]
+    # __selectionScale: list[float]
+
+    # __selections: list[SelectionControl]
+    __selectionContorl: SelectionControl
 
     __settingMenu: SelectionMenu
-    __settingMenuSelections: list[tuple[str, Callable[[], None]]]
-
 
     __SELECT_HEIGHT = 72
     __SELECT_SIGN_HEIGHT = 24
@@ -57,26 +70,124 @@ class StartScene(Scene):
 
     def __init__(self):
 
-        self.__selections = [
-            ("本地游戏", self.__onLocalGameEnter),
-            ("在线游戏", self.__onOnlineGameEnter),
-            ("设置", self.__onSettingEnter),
-            ("退出游戏", self.__onExitGameEnter),
-        ]
-        self.__settingMenuSelections = [
-            ("音量", lambda: None),
-            ("音效", lambda: None),
-            # ("返回", lambda: None),
+        selections = [
+            Selection(lambda: "本地游戏", self.__onLocalGameEnter),
+            Selection(lambda: "在线游戏", self.__onOnlineGameEnter),
+            Selection(lambda: "设置", self.__onSettingEnter),
+            Selection(lambda: "退出游戏", self.__onExitGameEnter),
         ]
 
         self.__ui = Surface((1440, 1280))
+
         img = image.load("assets/background.png").convert_alpha()
         self.__background = transform.smoothscale_by(
             img, (self.__ui.get_width() + 108) / img.get_width()
         )
-        self.__title = getFont(72).render("坦 克 动 荡", FONT_COLOR)[0]
-        self.__settingMenu = SelectionMenu(self.__ui, 1280, 960)
-        self.__settingMenu.selection = self.__settingMenuSelections
+        self.__title = LARGE_TITLE_FONT.render("坦 克 动 荡", FONT_COLOR)[0]
+        self.__selectionContorl = SelectionControl(
+            self.__ui.get_width(),
+            StartScene.__SELECT_HEIGHT * len(selections) + 108,
+            selections,
+        )
+
+        def __downTankSpeed():
+            GlobalSettingsManager.getGameSettings().tankSpeed = max(
+                100, GlobalSettingsManager.getGameSettings().tankSpeed - 50
+            )
+
+        def __upTankSpeed():
+            GlobalSettingsManager.getGameSettings().tankSpeed = min(
+                2000, GlobalSettingsManager.getGameSettings().tankSpeed + 50
+            )
+
+        def __downBulletSpeed():
+            GlobalSettingsManager.getGameSettings().commonBulletSpeed = max(
+                50, GlobalSettingsManager.getGameSettings().commonBulletSpeed - 50
+            )
+
+        def __upBulletSpeed():
+            GlobalSettingsManager.getGameSettings().commonBulletSpeed = min(
+                1000, GlobalSettingsManager.getGameSettings().commonBulletSpeed + 50
+            )
+
+        def __downGhostBulletSpeed():
+            GlobalSettingsManager.getGameSettings().ghostBulletSpeed = max(
+                50, GlobalSettingsManager.getGameSettings().ghostBulletSpeed - 50
+            )
+
+        def __upGhostBulletSpeed():
+            GlobalSettingsManager.getGameSettings().ghostBulletSpeed = min(
+                1000, GlobalSettingsManager.getGameSettings().ghostBulletSpeed + 50
+            )
+
+        def __downGhostSpeedIncreaseRate():
+            GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate = max(
+                0, GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate - 0.002
+            )
+
+        def __upGhostSpeedIncreaseRate():
+            GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate = min(
+                1, GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate + 0.002
+            )
+
+        def __downMissileSpeed():
+            GlobalSettingsManager.getGameSettings().missileSpeed = max(
+                50, GlobalSettingsManager.getGameSettings().missileSpeed - 50
+            )
+
+        def __upMissileSpeed():
+            GlobalSettingsManager.getGameSettings().missileSpeed = min(
+                1000, GlobalSettingsManager.getGameSettings().missileSpeed + 50
+            )
+
+        self.__settingMenu = SelectionMenu(
+            self.__ui,
+            1280,
+            960,
+            [
+                Selection(lambda: "坦克速度与子弹速度并不等价", lambda: None),
+                Selection(
+                    lambda: "坦克移动速度 {}".format(
+                        GlobalSettingsManager.getGameSettings().tankSpeed
+                    ),
+                    lambda: None,
+                    __downTankSpeed,
+                    __upTankSpeed,
+                ),
+                Selection(
+                    lambda: "子弹速度 {}".format(
+                        GlobalSettingsManager.getGameSettings().commonBulletSpeed
+                    ),
+                    lambda: None,
+                    __downBulletSpeed,
+                    __upBulletSpeed,
+                ),
+                Selection(
+                    lambda: "幽灵子弹速度 {}".format(
+                        GlobalSettingsManager.getGameSettings().ghostBulletSpeed
+                    ),
+                    lambda: None,
+                    __downGhostBulletSpeed,
+                    __upGhostBulletSpeed,
+                ),
+                Selection(
+                    lambda: "幽灵子弹速度增长率 {0:.2f}".format(
+                        GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate * 100
+                    ),
+                    lambda: None,
+                    __downGhostSpeedIncreaseRate,
+                    __upGhostSpeedIncreaseRate,
+                ),
+                Selection(
+                    lambda: "导弹速度 {}".format(
+                        GlobalSettingsManager.getGameSettings().missileSpeed
+                    ),
+                    lambda: None,
+                    __downMissileSpeed,
+                    __upMissileSpeed,
+                ),
+            ],
+        )
         # self.__settingMenu = pygame.Surface((1280, 960))
         # self.__settingMenu.fill(MENU_BACKGROUND)
 
@@ -86,19 +197,7 @@ class StartScene(Scene):
         if self.__settingMenu.isMenuShow:
             self.__settingMenu.process(event)
             return
-
-        if event.type == KEYDOWN:
-            if event.key == K_SPACE or event.key == K_RETURN:
-                self.__selections[self.__selectIndex][1]()
-
-            elif event.key == K_DOWN:
-
-                self.__selectIndex = (self.__selectIndex + 1) % len(self.__selections)
-            elif event.key == K_UP:
-
-                self.__selectIndex = (self.__selectIndex - 1 + len(self.__selections)) % len(
-                    self.__selections
-                )
+        self.__selectionContorl.process(event)
 
     def update(self, delta: float):
         self.__ui.fill(BACKGROUND)
@@ -110,40 +209,18 @@ class StartScene(Scene):
         self.__updateSelection(delta)
         self.__updateSettingMenu(delta)
 
+    
     def __updateSelection(self, delta: float):
-        SELECT_FONT_SIZE = 32
-        COMMON_FONT_SIZE = 24
+        self.__selectionContorl.update(delta)
+        
 
-        for i, opt in enumerate(self.__selections):
-            if opt[0] in self.__selectionDesFontSize:
-                if self.__selectIndex == i:
-                    self.__selectionDesFontSize[opt[0]] = easeLinear(
-                        16 * delta, self.__selectionDesFontSize[opt[0]], SELECT_FONT_SIZE, 1
-                    )
-                else:
-                    self.__selectionDesFontSize[opt[0]] = easeLinear(
-                        16 * delta, self.__selectionDesFontSize[opt[0]], COMMON_FONT_SIZE, 1
-                    )
-            else:
-                self.__selectionDesFontSize[opt[0]] = COMMON_FONT_SIZE
-
-            o = getFont(self.__selectionDesFontSize[opt[0]]).render(opt[0], FONT_COLOR)
-            basePoint = (
-                (self.ui.get_width() - o[1].width) / 2,
-                (self.__title.get_height() + 96) + i * StartScene.__SELECT_HEIGHT,
-            )
-            self.__ui.blit(o[0], basePoint)
-            if self.__selectIndex == i:
-                rightPoint = (basePoint[0] - 16, basePoint[1] + o[1].height / 2)
-                upPoint = (
-                    rightPoint[0] - 16,
-                    rightPoint[1] - StartScene.__SELECT_SIGN_HEIGHT / 2,
-                )
-                downPoint = (
-                    rightPoint[0] - 16,
-                    rightPoint[1] + StartScene.__SELECT_SIGN_HEIGHT / 2,
-                )
-                gfxdraw.filled_polygon(self.__ui, (rightPoint, upPoint, downPoint), FONT_COLOR)
+        self.__ui.blit(
+            self.__selectionContorl.ui,
+            (
+                (self.__ui.get_width() - self.__selectionContorl.ui.get_width()) / 2,
+                self.__title.get_height() + 108,
+            ),
+        )
 
     def __updateSettingMenu(self, delta: float):
         self.__settingMenu.update(delta)
@@ -157,4 +234,4 @@ class StartScene(Scene):
         self.__settingMenu.show()
 
     def __onExitGameEnter(self):
-        EventManager.raiseEvent(pygame.QUIT)
+        EventManager.raiseEventType(pygame.QUIT)

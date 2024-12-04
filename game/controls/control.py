@@ -15,4 +15,10 @@ class Control(Renderable):
     def process(self, event: Event): ...
 
     @abstractmethod
-    def update(self, delta: float): ...
+    def update(self, delta: float): 
+        """
+        更新控件
+        """
+        ...
+
+

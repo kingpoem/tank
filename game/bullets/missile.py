@@ -1,12 +1,13 @@
 from enum import Enum
+
 import math
 from loguru import logger
 from pymunk import Body, Poly
 from game.bullets.bullet import BULLET_COLLISION_TYPE, Bullet
 from game.eventManager import EventManager
 from pygame import Surface, draw, transform, image
-import numpy as np
 
+from game.gameSettings import GlobalSettingsManager
 from game.operateable import Operateable
 from game.sceneManager import SceneManager
 
@@ -16,17 +17,17 @@ class MISSILE_TYPE(Enum):
     GREEN = "assets/green_missile.png"
 
 
-class Missile(Bullet,Operateable):
+class Missile(Bullet, Operateable):
 
-    MISSILE_SPEED = 200
     MISSILE_WIDTH = 24
 
     def __init__(self, initX: float, initY: float, initAngle: float, missileType: MISSILE_TYPE):
         def _vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
-            body.velocity = body.rotation_vector * Missile.MISSILE_SPEED
+            body.velocity = (
+                body.rotation_vector * GlobalSettingsManager.getGameSettings().missileSpeed
+            )
             # body.velocity = body.velocity * 1.02
             body.update_velocity(body, (0, 0), 1, dt)
-            pass
 
         o_img = image.load(missileType.value).convert_alpha()
         self.surface = transform.smoothscale_by(o_img, Missile.MISSILE_WIDTH / o_img.get_width())
@@ -36,7 +37,9 @@ class Missile(Bullet,Operateable):
         self.body.angle = initAngle
         self.body.moment = float("inf")
         self.body.mass = 1
-        self.body.velocity = self.body.rotation_vector * Missile.MISSILE_SPEED
+        self.body.velocity = (
+            self.body.rotation_vector * GlobalSettingsManager.getGameSettings().missileSpeed
+        )
         self.body.velocity_func = _vec_func
 
         self.shapes = [
@@ -55,9 +58,7 @@ class Missile(Bullet,Operateable):
     def render(self, screen: Surface):
         # r = np.rad2deg(math.atan2(self.body.velocity[0], self.body.velocity[1])) - 90
         # print(r)
-        r_img = transform.rotate(
-            self.surface, math.degrees(-self.body.angle)
-        )
+        r_img = transform.rotate(self.surface, math.degrees(-self.body.angle))
         screen.blit(r_img, r_img.get_rect(center=self.body.position))
 
     def onForward(self, delta: float):
@@ -65,15 +66,13 @@ class Missile(Bullet,Operateable):
             self.body.rotation_vector * 300000 * delta, self.body.position
         )
 
-
     def onLeft(self, delta: float):
         self.body.angular_velocity = -150 * delta
 
     def onRight(self, delta: float):
         self.body.angular_velocity = 150 * delta
 
-    def onShoot(self):
-        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+    def onShoot(self, delta: float, isFirstShoot: bool):
+        if isFirstShoot and (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
             gameObjectManager.removeObject(self)
-        logger.debug("导弹主动销毁")
-
+            logger.debug(f"导弹主动销毁 {self}")

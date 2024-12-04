@@ -5,6 +5,7 @@ from pymunk import Body, Circle, Shape, Space
 
 from game.eventManager import EventManager
 from game.gameObject import GameObject
+from game.gameSettings import GlobalSettingsManager
 
 
 BULLET_COLLISION_TYPE = 2
@@ -25,10 +26,12 @@ class Bullet(GameObject):
         self.body.mass = 1
 
         # self.body.velocity = (0,0)
-        self.body.velocity = self.body.rotation_vector * 200
+        self.body.velocity = self.body.rotation_vector * GlobalSettingsManager.getGameSettings().commonBulletSpeed
         self.body.velocity_func = _vec_func
 
         self.shapes = [Circle(self.body, 4)]
+        # 设置子弹摩擦力为0
+        self.shapes[0].friction = 0
 
         # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
         event = EventManager.allocateEventType()

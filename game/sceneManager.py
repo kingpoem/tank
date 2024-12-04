@@ -34,10 +34,12 @@ class SceneManager:
         SceneManager.__currentSceneType = sceneType
         if sceneType not in SceneManager.__sceneList:
             SceneManager.__sceneList[sceneType] = SceneManager.__sceneTypeToScene(sceneType)
+            SceneManager.getCurrentScene().onEntered()
         if delOtherScene:
             other_scene = [cs for cs in SceneManager.__sceneList if not cs == sceneType]
             for scene in other_scene:
-                del SceneManager.__sceneList[scene]
+                SceneManager.__sceneList[scene].onLeaved()
+                SceneManager.__sceneList.pop(scene)
 
 
     @staticmethod

@@ -66,6 +66,7 @@ class RemoteControlMissileWeapon(Weapon):
                 if isinstance(self.owner, Operateable):
                     self.owner.operation = o
                 EventManager.cancelTimer(self.__MISSILE_DISAPPEAR_EVENT_TYPE)
+                
 
             if o is not None:
                 self.owner.operation = None

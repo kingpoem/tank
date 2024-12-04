@@ -4,6 +4,7 @@ from typing import final
 
 from pygame.event import Event
 from game.eventManager import EventManager
+from game.sceneManager import SceneManager
 
 
 class Operation:
@@ -31,6 +32,7 @@ class Operation:
 class Operateable(ABC):
 
     __operation: Operation | None = None
+    __isFirstShoot: bool = False
 
     @property
     def operation(self):
@@ -38,24 +40,13 @@ class Operateable(ABC):
 
     @operation.setter
     def operation(self, value: Operation | None):
-        from pygame import KEYDOWN
+        # from pygame import KEYDOWN
 
         self.__operation = value
-        if (value is not None and value.shootKey is None) or value is None:
-            EventManager.removeHandler(KEYDOWN, self.__onShootKeyDownHandler)
-        else:
-            EventManager.addHandler(KEYDOWN, self.__onShootKeyDownHandler)
 
     def __init__(self, operation: Operation | None):
-        from pygame import KEYDOWN
-        
-
+        # from pygame import KEYDOWN
         self.__operation = operation
-        EventManager.addHandler(KEYDOWN, self.__onShootKeyDownHandler)
-
-    def __onShootKeyDownHandler(self,e: Event):
-        if self.operation is not None and e.key == self.operation.shootKey:
-            self.onShoot()
 
     @final
     def operate(self, delta: float):
@@ -73,17 +64,35 @@ class Operateable(ABC):
         if pressed[self.operation.rightKey]:
             self.onRight(delta)
 
+        if pressed[self.operation.shootKey]:
+            self.onShoot(delta, self.__isFirstShoot)
+            self.__isFirstShoot = False
+        else:
+            self.__isFirstShoot = True
+
     def onForward(self, delta: float):
+        """
+        当处于前进状态时
+        """
         pass
 
     def onBack(self, delta: float):
+        """
+        当处于后退状态时
+        """
         pass
 
     def onLeft(self, delta: float):
+        """
+        当处于左转状态时
+        """
         pass
 
     def onRight(self, delta: float):
+        """
+        当处于右转状态时
+        """
         pass
 
-    def onShoot(self):
+    def onShoot(self, delta: float, isFirstShoot: bool):
         pass

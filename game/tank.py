@@ -9,6 +9,7 @@ from game.bullets.bullet import Bullet, BULLET_COLLISION_TYPE
 from game.eventManager import EventManager
 from game.gameObject import GameObject
 from game.gameObjectManager import GameObjectManager
+from game.gameSettings import GlobalSettingsManager
 from game.operateable import Operateable, Operation
 from game.sceneManager import SceneManager
 from game.shootable import Shootable
@@ -158,7 +159,7 @@ class Tank(GameObject, Shootable, Operateable):
         # from game.weapons.commonWeapon import CommonWeapon
         from game.weapons.ghostWeapon import GhostWeapon
         from game.weapons.remoteControlMissileWeapon import RemoteControlMissileWeapon
-        
+
         lookPath = f"assets/{self.style.value}_tank.png"
         if self.weapon.canUse():
             if isinstance(self.weapon, RemoteControlMissileWeapon):
@@ -171,12 +172,8 @@ class Tank(GameObject, Shootable, Operateable):
     @staticmethod
     def __onBulletCollision(arbiter: Arbiter, space: Space, data: dict[Any, Any]):
         if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-            tank = gameObjectManager.getGameObjectByBody(
-                arbiter.shapes[0].body
-            )
-            bullet = gameObjectManager.getGameObjectByBody(
-                arbiter.shapes[1].body
-            )
+            tank = gameObjectManager.getGameObjectByBody(arbiter.shapes[0].body)
+            bullet = gameObjectManager.getGameObjectByBody(arbiter.shapes[1].body)
             if bullet is not None:
                 gameObjectManager.removeObject(bullet)
             if tank is not None:
@@ -184,13 +181,15 @@ class Tank(GameObject, Shootable, Operateable):
             logger.debug(f"坦克被子弹击中 {tank} {bullet}")
 
     def onForward(self, delta: float):
+        tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * Tank.TANK_MOVE_SPEED, self.body.position
+            self.body.rotation_vector * tankSpeed * 1000, self.body.position
         )
 
     def onBack(self, delta: float):
+        tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * (-Tank.TANK_MOVE_SPEED), self.body.position
+            self.body.rotation_vector * -tankSpeed * 1000, self.body.position
         )
 
     def onLeft(self, delta: float):
@@ -199,7 +198,10 @@ class Tank(GameObject, Shootable, Operateable):
     def onRight(self, delta: float):
         self.body.angular_velocity = Tank.ROTATE_SPEED * delta
 
-    def onShoot(self):
-        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+    def onShoot(self, delta: float, isFirstShoot: bool):
+        if (
+            isFirstShoot
+            and (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None
+        ):
             if gameObjectManager.containObject(self):
                 self.shoot()

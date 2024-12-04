@@ -41,6 +41,7 @@ class GameObjectManager:
         object.setBody(self.space)
 
     def removeObject(self, object: GameObject):
+
         if object not in self.__objects:
             return
         self.__objects.remove(object)

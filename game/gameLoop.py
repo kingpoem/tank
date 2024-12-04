@@ -5,13 +5,12 @@ from loguru import logger
 import pygame
 import pygame.freetype
 
-from pygame import Surface
+from pygame import KEYDOWN, Surface
 
 
 from game.eventManager import EventManager
-from game.gameResources import BACKGROUND, FONT_COLOR
-from pymunk.pygame_util import DrawOptions
 
+from pymunk.pygame_util import DrawOptions
 from game.sceneManager import SceneManager
 
 
@@ -32,9 +31,6 @@ class GameLoop:
     screen: Surface
     """绘制屏幕"""
 
-    font: pygame.freetype.Font
-    """字体"""
-
     __debugOptions: DrawOptions
 
     def __init__(self):
@@ -50,9 +46,6 @@ class GameLoop:
         # 初始化游戏屏幕
         GameLoop.screen = pygame.display.set_mode((1440, 1280))
 
-        # 初始化渲染字体
-        GameLoop.font = pygame.freetype.Font("C:\\Windows\\fonts\\msyh.ttc", 24)
-
         # 初始化场景
         SceneManager.init()
 
@@ -60,11 +53,14 @@ class GameLoop:
 
         GameLoop.__debugOptions = DrawOptions(GameLoop.screen)
 
+        import game.gameResources
+
     @staticmethod
     def run():
         """
         开始游戏循环
         """
+
         if GameLoop.isRunning:
             return
         GameLoop.isRunning = True
@@ -76,18 +72,23 @@ class GameLoop:
 
         # 初始化游戏时钟
         clock = pygame.time.Clock()
+        pygame.time.set_timer(pygame.USEREVENT, 1000)
+        preTicks = 0
+        from game.gameResources import BACKGROUND, FONT_COLOR, MEDIAN_FONT, SMALL_FONT
 
         while GameLoop.isRunning:
 
             GameLoop.fps = clock.get_fps()
-            if GameLoop.fps != 0:
-                GameLoop.delta = 1 / GameLoop.fps
+            # delta 统一以s为单位的小数
+            GameLoop.delta = (pygame.time.get_ticks() - preTicks) / 1000
+            preTicks = pygame.time.get_ticks()
 
             GameLoop.__handleEvent()
             if not GameLoop.isRunning:
                 GameLoop.__onGameQuit()
                 break
 
+            EventManager.updateTimer(GameLoop.delta)
             SceneManager.getCurrentScene().update(GameLoop.delta)
 
             GameLoop.screen.fill(BACKGROUND)
@@ -101,18 +102,18 @@ class GameLoop:
                 ),
             )
             SceneManager.getCurrentScene().render(GameLoop.screen)
-            
+
             # if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
             #     gameObjectManager.space.debug_draw(GameLoop.__debugOptions)
 
             # debug
             # FPS
-            GameLoop.font.render_to(GameLoop.screen, (0, 0), f"FPS: {GameLoop.fps:.2f}", FONT_COLOR)
+            SMALL_FONT.render_to(GameLoop.screen, (0, 0), f"FPS: {GameLoop.fps:.2f}", FONT_COLOR)
             # delta
-            GameLoop.font.render_to(
+            SMALL_FONT.render_to(
                 GameLoop.screen, (0, 24), f"delta: {GameLoop.delta * 1000:.1f}ms", FONT_COLOR
             )
-            pygame.display.flip()
+            pygame.display.update()
 
             clock.tick(FPS)
         pygame.quit()

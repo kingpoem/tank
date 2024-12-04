@@ -6,13 +6,14 @@ from pymunk import Body, Poly, Vec2d
 from game.bullets.bullet import BULLET_COLLISION_TYPE, Bullet
 from game.eventManager import EventManager
 from game.gameResources import BACKGROUND
+from game.gameSettings import GlobalSettingsManager
 
 
 class GhostBullet(Bullet):
     def __init__(self, initX: float, initY: float, initAngle: float):
         def _vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             # body.velocity = body.rotation_vector * 300
-            body.velocity = body.velocity * 1.02
+            body.velocity = body.velocity * (1 + GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate)
             body.update_velocity(body, (0, 0), 1, dt)
             pass
 
@@ -20,7 +21,7 @@ class GhostBullet(Bullet):
         self.body.position = (initX, initY)
         self.body.angle = initAngle
         # self.body.moment = float('inf')
-        self.body.velocity = self.body.rotation_vector * 300
+        self.body.velocity = self.body.rotation_vector * GlobalSettingsManager.getGameSettings().ghostBulletSpeed
         self.body.velocity_func = _vec_func
 
         self.shapes = [Poly.create_box(self.body, (20, 4))]
