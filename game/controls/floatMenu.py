@@ -1,37 +1,17 @@
-from typing import Callable
-from pygame import (
-    K_DOWN,
-    K_ESCAPE,
-    K_KP_ENTER,
-    K_LEFT,
-    K_RETURN,
-    K_RIGHT,
-    K_SPACE,
-    K_UP,
-    KEYDOWN,
-    Surface,
-    gfxdraw,
-)
-from pygame import transform
 from pygame.event import Event
 from game.controls.control import Control
-from game.controls.selectionControl import Selection, SelectionControl
-from game.gameResources import (
-    BACKGROUND,
-    FONT_COLOR,
-    LARGE_FONT,
-    MEDIAN_FONT,
-    MENU_BACKGROUND,
-    MENU_ENV_BACKGROUND,
-    easeLinear,
-)
+from pygame import K_ESCAPE, KEYDOWN, Surface
+from pygame import Surface
+
+from game.gameResources import MENU_BACKGROUND, MENU_ENV_BACKGROUND, easeLinear
 
 
-class SelectionMenu(SelectionControl):
+class FloatMenu(Control):
 
-    __SelectionMenuUI: Surface
     __targetUI: Surface
-    __envMask: Surface
+    __floatMenuUI: Surface
+    __content: Control
+    __envMask : Surface
 
     __isMenuShow: bool = False
     __menuBottom: float = -10
@@ -39,28 +19,31 @@ class SelectionMenu(SelectionControl):
 
     @property
     def ui(self) -> Surface:
-        return self.__SelectionMenuUI
-
+        return self.__floatMenuUI
+    
     @property
     def isMenuShow(self):
         return self.__isMenuShow
 
-    def __init__(
-        self, targetUI: Surface, width: float, height: float, selections: list[Selection]
-    ) -> None:
-        super().__init__(width, height, selections)
-        self.__SelectionMenuUI = Surface((width, height))
+    def __init__(self, targetUI: Surface, width: float, height: float, content: Control):
         self.__targetUI = targetUI
-        self.__envMask = Surface(self.__targetUI.get_size()).convert_alpha()
+        self.__content = content
+
+        self.__floatMenuUI = Surface((width, height))
+        self.__floatMenuUI.fill(MENU_BACKGROUND)
+        self.__envMask = Surface(targetUI.get_size()).convert_alpha()
         self.__envMask.fill(MENU_ENV_BACKGROUND)
 
+
     def process(self, event: Event):
-        super().process(event)
+        self.__content.process(event)
         if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
                 self.hide()
 
     def update(self, delta: float):
+        self.__content.update(delta)
+
         if self.__isMenuShow:
             self.__menuBottom = easeLinear(
                 8 * delta,
@@ -80,31 +63,27 @@ class SelectionMenu(SelectionControl):
 
         if self.__menuBottom <= 0:
             return
-
-        self.ui.fill(MENU_BACKGROUND)
-        super().update(delta)
+    
+        self.__floatMenuUI.fill(MENU_BACKGROUND)
         self.__envMask.set_alpha(self.__envMaskAlpha)
-
         self.__targetUI.blit(self.__envMask, (0, 0))
-        self.ui.blit(
-            super().ui,
+
+        self.__floatMenuUI.blit(
+            self.__content.ui,
             (
-                (self.ui.get_width() - super().ui.get_width()) / 2,
-                (self.ui.get_height() - super().ui.get_height()) / 2,
+                (self.__floatMenuUI.get_width() - self.__content.ui.get_width()) / 2,
+                (self.__floatMenuUI.get_height() - self.__content.ui.get_height()) / 2,
             ),
         )
         self.__targetUI.blit(
-            self.ui,
+            self.__floatMenuUI,
             (
-                (self.__targetUI.get_width() - self.ui.get_width()) / 2,
-                self.__menuBottom - self.ui.get_height(),
+                (self.__targetUI.get_width() - self.__floatMenuUI.get_width()) / 2,
+                self.__menuBottom - self.__floatMenuUI.get_height(),
             ),
         )
 
     def render(self, screen: Surface): ...
-
-    def needUpdate(self):
-        return True
 
     def show(self):
         self.__isMenuShow = True

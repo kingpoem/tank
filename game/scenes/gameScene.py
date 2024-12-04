@@ -9,7 +9,8 @@ from pygame.freetype import Font
 from pymunk import Space
 
 # from game.gameLoop import GameLoop
-from game.controls.selectionMenu import Selection, SelectionMenu
+from game.controls.floatMenu import FloatMenu
+from game.controls.selectionControl import Selection, SelectionControl
 from game.operateable import Operateable, Operation
 from game.sceneManager import SCENE_TYPE, SceneManager
 from game.weapons.commonWeapon import CommonWeapon
@@ -50,7 +51,7 @@ class GameScene(Scene):
     __ui: Surface
     __gameMapUI: Surface
     __scoreUI: Surface
-    __gameMenu: SelectionMenu
+    __gameMenu: FloatMenu
 
     __font: Font
 
@@ -92,16 +93,21 @@ class GameScene(Scene):
             )
         )
 
-        self.__gameMenu = SelectionMenu(
+        self.__gameMenu = FloatMenu(
             self.__ui,
             1080,
             480,
-            [
-                Selection(
-                    lambda: "返回主菜单", lambda: SceneManager.changeScene(SCENE_TYPE.START_SCENE)
-                ),
-                Selection(lambda: "退出游戏", lambda: EventManager.raiseEventType(QUIT)),
-            ],
+            SelectionControl(
+                1080,
+                480,
+                [
+                    Selection(
+                        lambda: "返回主菜单",
+                        lambda: SceneManager.changeScene(SCENE_TYPE.START_SCENE),
+                    ),
+                    Selection(lambda: "退出游戏", lambda: EventManager.raiseEventType(QUIT)),
+                ],
+            ),
         )
 
         # 决定渲染顺序
@@ -249,5 +255,4 @@ class GameScene(Scene):
         elif not self.__gameMenu.isMenuShow and EventManager.isTimerPaused():
             EventManager.resumeTimer()
 
-    def onLeaved(self):
-        ...
+    def onLeaved(self): ...

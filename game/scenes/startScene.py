@@ -23,8 +23,8 @@ from pygame.freetype import Font
 from pygame.event import Event
 from pymunk import Space
 from pygame import image, transform
-from game.controls.selectionControl import SelectionControl
-from game.controls.selectionMenu import Selection, SelectionMenu
+from game.controls.floatMenu import FloatMenu
+from game.controls.selectionControl import Selection, SelectionControl
 from game.eventManager import EventManager
 from game.gameObjectManager import GameObjectManager
 from game.gameResources import (
@@ -55,7 +55,7 @@ class StartScene(Scene):
     # __selections: list[SelectionControl]
     __selectionContorl: SelectionControl
 
-    __settingMenu: SelectionMenu
+    __settingMenu: FloatMenu
 
     __SELECT_HEIGHT = 72
     __SELECT_SIGN_HEIGHT = 24
@@ -140,53 +140,57 @@ class StartScene(Scene):
                 1000, GlobalSettingsManager.getGameSettings().missileSpeed + 50
             )
 
-        self.__settingMenu = SelectionMenu(
+        self.__settingMenu = FloatMenu(
             self.__ui,
             1280,
             960,
-            [
-                Selection(lambda: "坦克速度与子弹速度并不等价", lambda: None),
-                Selection(
-                    lambda: "坦克移动速度 {}".format(
-                        GlobalSettingsManager.getGameSettings().tankSpeed
+            SelectionControl(
+                1280,
+                960,
+                [
+                    Selection(lambda: "坦克速度与子弹速度并不等价", lambda: None),
+                    Selection(
+                        lambda: "坦克移动速度 {}".format(
+                            GlobalSettingsManager.getGameSettings().tankSpeed
+                        ),
+                        lambda: None,
+                        __downTankSpeed,
+                        __upTankSpeed,
                     ),
-                    lambda: None,
-                    __downTankSpeed,
-                    __upTankSpeed,
-                ),
-                Selection(
-                    lambda: "子弹速度 {}".format(
-                        GlobalSettingsManager.getGameSettings().commonBulletSpeed
+                    Selection(
+                        lambda: "子弹速度 {}".format(
+                            GlobalSettingsManager.getGameSettings().commonBulletSpeed
+                        ),
+                        lambda: None,
+                        __downBulletSpeed,
+                        __upBulletSpeed,
                     ),
-                    lambda: None,
-                    __downBulletSpeed,
-                    __upBulletSpeed,
-                ),
-                Selection(
-                    lambda: "幽灵子弹速度 {}".format(
-                        GlobalSettingsManager.getGameSettings().ghostBulletSpeed
+                    Selection(
+                        lambda: "幽灵子弹速度 {}".format(
+                            GlobalSettingsManager.getGameSettings().ghostBulletSpeed
+                        ),
+                        lambda: None,
+                        __downGhostBulletSpeed,
+                        __upGhostBulletSpeed,
                     ),
-                    lambda: None,
-                    __downGhostBulletSpeed,
-                    __upGhostBulletSpeed,
-                ),
-                Selection(
-                    lambda: "幽灵子弹速度增长率 {0:.2f}".format(
-                        GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate * 100
+                    Selection(
+                        lambda: "幽灵子弹速度增长率 {0:.2f}".format(
+                            GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate * 100
+                        ),
+                        lambda: None,
+                        __downGhostSpeedIncreaseRate,
+                        __upGhostSpeedIncreaseRate,
                     ),
-                    lambda: None,
-                    __downGhostSpeedIncreaseRate,
-                    __upGhostSpeedIncreaseRate,
-                ),
-                Selection(
-                    lambda: "导弹速度 {}".format(
-                        GlobalSettingsManager.getGameSettings().missileSpeed
+                    Selection(
+                        lambda: "导弹速度 {}".format(
+                            GlobalSettingsManager.getGameSettings().missileSpeed
+                        ),
+                        lambda: None,
+                        __downMissileSpeed,
+                        __upMissileSpeed,
                     ),
-                    lambda: None,
-                    __downMissileSpeed,
-                    __upMissileSpeed,
-                ),
-            ],
+                ],
+            ),
         )
         # self.__settingMenu = pygame.Surface((1280, 960))
         # self.__settingMenu.fill(MENU_BACKGROUND)
@@ -209,10 +213,8 @@ class StartScene(Scene):
         self.__updateSelection(delta)
         self.__updateSettingMenu(delta)
 
-    
     def __updateSelection(self, delta: float):
         self.__selectionContorl.update(delta)
-        
 
         self.__ui.blit(
             self.__selectionContorl.ui,
