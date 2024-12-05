@@ -151,7 +151,7 @@ class GameScene(Scene):
         self.__green_tank.body.position += (random.uniform(-5, 5), random.uniform(-5, 5))
 
         self.__red_tank.weapon = WeaponFactory.createWeapon(
-            self.__red_tank, WEAPON_TYPE.MISSILE_WEAPON
+            self.__red_tank, WEAPON_TYPE.FRAGMENTBOMB_WEAPON
         )
         self.__green_tank.weapon = WeaponFactory.createWeapon(
             self.__green_tank, WEAPON_TYPE.COMMON_WEAPON

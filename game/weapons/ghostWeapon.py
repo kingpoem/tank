@@ -1,5 +1,5 @@
 from loguru import logger
-from game.bullets.bullet import Bullet
+from game.bullets.commonBullet import CommonBullet
 from game.bullets.ghostBullet import GhostBullet
 from game.eventManager import EventManager
 from game.sceneManager import SceneManager
@@ -35,7 +35,7 @@ class GhostWeapon(Weapon):
         event = EventManager.allocateEventType()
 
         # 超过指定时间子弹自动消失
-        def __bulletOutOfTimeDisappear(bullet: Bullet) -> None:
+        def __bulletOutOfTimeDisappear(bullet: GhostBullet) -> None:
             if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
                 if gameObjectManager.containObject(bullet):
                     gameObjectManager.removeObject(bullet)

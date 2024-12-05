@@ -5,7 +5,7 @@ from loguru import logger
 from pygame import Surface, image, transform, draw, gfxdraw
 from pymunk import Arbiter, Body, CollisionHandler, Shape, Space, Poly
 
-from game.bullets.bullet import Bullet, BULLET_COLLISION_TYPE
+from game.bullets.commonBullet import CommonBullet, BULLET_COLLISION_TYPE
 from game.eventManager import EventManager
 from game.gameObject import GameObject
 from game.gameObjectManager import GameObjectManager
@@ -183,13 +183,13 @@ class Tank(GameObject, Shootable, Operateable):
     def onForward(self, delta: float):
         tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * tankSpeed * 1000, self.body.position
+            self.body.rotation_vector * tankSpeed * 100000 * delta, self.body.position
         )
 
     def onBack(self, delta: float):
         tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * -tankSpeed * 1000, self.body.position
+            self.body.rotation_vector * -tankSpeed * 100000 * delta, self.body.position
         )
 
     def onLeft(self, delta: float):

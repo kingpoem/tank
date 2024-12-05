@@ -7,6 +7,7 @@ class WEAPON_TYPE(Enum):
     COMMON_WEAPON = 0
     GHOST_WEAPON = 1
     MISSILE_WEAPON = 2
+    FRAGMENTBOMB_WEAPON = 3
 
 
 class WeaponFactory:
@@ -19,6 +20,7 @@ class WeaponFactory:
         from game.weapons.commonWeapon import CommonWeapon
         from game.weapons.ghostWeapon import GhostWeapon
         from game.weapons.remoteControlMissileWeapon import RemoteControlMissileWeapon
+        from game.weapons.fragmentBombWeapon import FragmentBombWeapon
 
-        weaponList: list[type[Weapon]] = [CommonWeapon, GhostWeapon, RemoteControlMissileWeapon]
+        weaponList: list[type[Weapon]] = [CommonWeapon, GhostWeapon, RemoteControlMissileWeapon,FragmentBombWeapon]
         return weaponList[weaponType.value](owner)

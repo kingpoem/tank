@@ -3,26 +3,30 @@ from selectors import SelectorKey
 import numpy as np
 from pygame import Surface, draw, transform
 from pymunk import Body, Poly, Vec2d
-from game.bullets.bullet import BULLET_COLLISION_TYPE, Bullet
+from game.bullets.commonBullet import BULLET_COLLISION_TYPE, CommonBullet
 from game.eventManager import EventManager
+from game.gameObject import GameObject
 from game.gameResources import BACKGROUND
 from game.gameSettings import GlobalSettingsManager
 
 
-class GhostBullet(Bullet):
+class GhostBullet(GameObject):
+    """
+    幽灵子弹
+    """
     def __init__(self, initX: float, initY: float, initAngle: float):
-        def _vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
+        def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             # body.velocity = body.rotation_vector * 300
             body.velocity = body.velocity * (1 + GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate)
             body.update_velocity(body, (0, 0), 1, dt)
-            pass
+            
 
         self.body = Body(body_type=Body.KINEMATIC)
         self.body.position = (initX, initY)
         self.body.angle = initAngle
         # self.body.moment = float('inf')
         self.body.velocity = self.body.rotation_vector * GlobalSettingsManager.getGameSettings().ghostBulletSpeed
-        self.body.velocity_func = _vec_func
+        self.body.velocity_func = __vec_func
 
         self.shapes = [Poly.create_box(self.body, (20, 4))]
 

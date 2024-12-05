@@ -1,5 +1,5 @@
 from loguru import logger
-from game.bullets.bullet import Bullet
+from game.bullets.commonBullet import CommonBullet
 from game.bullets.missile import MISSILE_TYPE, Missile
 from game.eventManager import EventManager
 from game.sceneManager import SceneManager
@@ -23,7 +23,7 @@ class CommonWeapon(Weapon):
         if self.owner.body.space:
 
             self.__shootBulletCount += 1
-            bullet = Bullet(
+            bullet = CommonBullet(
                 self.owner.body.position.x + self.owner.body.rotation_vector.x * BULLET_SHOOT_DIS,
                 self.owner.body.position.y + self.owner.body.rotation_vector.y * BULLET_SHOOT_DIS,
                 self.owner.body.angle,
@@ -32,7 +32,7 @@ class CommonWeapon(Weapon):
             event = EventManager.allocateEventType()
 
             # 超过指定时间子弹自动消失
-            def __bulletOutOfTimeDisappear(bullet: Bullet) -> None:
+            def __bulletOutOfTimeDisappear(bullet: CommonBullet) -> None:
                 if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
                     if gameObjectManager.containObject(bullet):
                         gameObjectManager.removeObject(bullet)

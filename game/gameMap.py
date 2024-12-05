@@ -229,7 +229,7 @@ class GameMap(GameObject):
                         )
         for shape in self.shapes:
             shape.elasticity = 1
-            shape.friction = 1
+            shape.friction = 0
 
     def getPlotPos(self,x : int,y : int):
         return (

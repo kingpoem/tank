@@ -3,10 +3,11 @@ from enum import Enum
 import math
 from loguru import logger
 from pymunk import Body, Poly
-from game.bullets.bullet import BULLET_COLLISION_TYPE, Bullet
+from game.bullets.commonBullet import BULLET_COLLISION_TYPE, CommonBullet
 from game.eventManager import EventManager
 from pygame import Surface, draw, transform, image
 
+from game.gameObject import GameObject
 from game.gameSettings import GlobalSettingsManager
 from game.operateable import Operateable
 from game.sceneManager import SceneManager
@@ -17,12 +18,14 @@ class MISSILE_TYPE(Enum):
     GREEN = "assets/green_missile.png"
 
 
-class Missile(Bullet, Operateable):
-
+class Missile(GameObject, Operateable):
+    """
+    遥控导弹
+    """
     MISSILE_WIDTH = 24
 
     def __init__(self, initX: float, initY: float, initAngle: float, missileType: MISSILE_TYPE):
-        def _vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
+        def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             body.velocity = (
                 body.rotation_vector * GlobalSettingsManager.getGameSettings().missileSpeed
             )
@@ -40,7 +43,7 @@ class Missile(Bullet, Operateable):
         self.body.velocity = (
             self.body.rotation_vector * GlobalSettingsManager.getGameSettings().missileSpeed
         )
-        self.body.velocity_func = _vec_func
+        self.body.velocity_func = __vec_func
 
         self.shapes = [
             Poly.create_box(self.body, (self.surface.get_width(), self.surface.get_height()))

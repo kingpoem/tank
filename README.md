@@ -1,7 +1,8 @@
 # TankGame
 
 ## 📄介绍
-使用`Python`版本`3.10.11`
+
+![](https://img.shields.io/badge/Python%203.10.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
 使用`Python`库
 - `pygame`

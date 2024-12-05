@@ -1,5 +1,5 @@
 from loguru import logger
-from game.bullets.bullet import Bullet
+from game.bullets.commonBullet import CommonBullet
 from game.bullets.missile import MISSILE_TYPE, Missile
 from game.eventManager import EventManager
 from game.gameObject import GameObject

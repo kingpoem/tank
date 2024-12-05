@@ -57,21 +57,22 @@ class EventManager:
             return
         for timer in EventManager.__timers:
             timer.timeMs -= delta * 1000
-        for i in [
-            i for i in range(len(EventManager.__timers)) if EventManager.__timers[i].timeMs <= 0
-        ]:
-            event = EventManager.__timers[i].event
-            logger.debug(f"定时器触发{event} ")
-            if isinstance(event, int):
-                EventManager.raiseEventType(event)
-            elif isinstance(event, Event):
-                EventManager.raiseEvent(event)
 
-            if EventManager.__timers[i].isEndless:
+        acTimer = [
+            t for t in EventManager.__timers if t.timeMs <= 0
+        ]
+        for timer in acTimer:
+            logger.debug(f"定时器触发{timer.event} ")
+            if isinstance(timer.event, int):
+                EventManager.raiseEventType(timer.event)
+            elif isinstance(timer.event, Event):
+                EventManager.raiseEvent(timer.event)
+
+            if timer.isEndless:
                 continue
-            EventManager.__timers[i].loops -= 1
-            if EventManager.__timers[i].loops <= 0:
-                EventManager.__timers.pop(i)
+            timer.loops -= 1
+            if timer.loops <= 0:
+                EventManager.__timers.remove(timer)
 
     @staticmethod
     def setTimer(event: int | Event, millis: int, loops: int = 0):

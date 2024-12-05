@@ -14,7 +14,7 @@ from pymunk.pygame_util import DrawOptions
 from game.sceneManager import SceneManager
 
 
-FPS = 60
+FPS = 120
 
 
 class GameLoop:
