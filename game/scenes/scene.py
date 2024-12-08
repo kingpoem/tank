@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from pygame import Surface
 from pygame.event import Event
 
-from game.gameObjectManager import GameObjectManager
+from game.spaces.gameObjectSpace import GameObjectSpace
 
 
 class Scene(ABC):
@@ -11,9 +11,6 @@ class Scene(ABC):
     @abstractmethod
     def ui(self) -> Surface: ...
 
-    @property
-    @abstractmethod
-    def gameObjectManager(self) -> GameObjectManager | None: ...
 
     @abstractmethod
     def process(self, event: Event):

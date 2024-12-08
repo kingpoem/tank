@@ -3,6 +3,7 @@ from game.bullets.commonBullet import CommonBullet
 from game.bullets.ghostBullet import GhostBullet
 from game.eventManager import EventManager
 from game.sceneManager import SceneManager
+from game.scenes.gameScene import GameScene
 from game.tank import Tank
 from game.weapons.weapon import Weapon
 
@@ -36,9 +37,9 @@ class GhostWeapon(Weapon):
 
         # 超过指定时间子弹自动消失
         def __bulletOutOfTimeDisappear(bullet: GhostBullet) -> None:
-            if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-                if gameObjectManager.containObject(bullet):
-                    gameObjectManager.removeObject(bullet)
+            if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                if gameScene.gameObjectSpace.containObject(bullet):
+                    gameScene.gameObjectSpace.removeObject(bullet)
                     logger.debug(f"子弹超时消失 {bullet}")
                 EventManager.cancelTimer(event)
 
@@ -47,8 +48,8 @@ class GhostWeapon(Weapon):
             EventManager.cancelTimer(event)
 
         bullet.Removed = __onBulletDisappear
-        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-            gameObjectManager.registerObject(bullet)
+        if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+            gameScene.gameObjectSpace.registerObject(bullet)
         EventManager.addHandler(event, lambda e: __bulletOutOfTimeDisappear(bullet))
         EventManager.setTimer(event, BULLET_DISAPPEAR_TIME_MS)
 

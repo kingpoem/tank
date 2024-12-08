@@ -13,6 +13,7 @@ from game.operateable import Operateable
 from game.sceneManager import SceneManager
 
 
+
 class MISSILE_TYPE(Enum):
     RED = "assets/red_missile.png"
     GREEN = "assets/green_missile.png"
@@ -51,11 +52,11 @@ class Missile(GameObject, Operateable):
 
         event = EventManager.allocateEventType()
 
-        def __delayCollisionTypeEventHandler():
+        def __delayEnableCollisionEventHandler():
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
             EventManager.cancelTimer(event)
 
-        EventManager.addHandler(event, lambda e: __delayCollisionTypeEventHandler())
+        EventManager.addHandler(event, lambda e: __delayEnableCollisionEventHandler())
         EventManager.setTimer(event, 300)
 
     def render(self, screen: Surface):
@@ -76,6 +77,7 @@ class Missile(GameObject, Operateable):
         self.body.angular_velocity = 150 * delta
 
     def onShoot(self, delta: float, isFirstShoot: bool):
-        if isFirstShoot and (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-            gameObjectManager.removeObject(self)
+        from game.scenes.gameScene import GameScene
+        if isFirstShoot and isinstance((gameScene := SceneManager.getCurrentScene()),GameScene):
+            gameScene.gameObjectSpace.removeObject(self)
             logger.debug(f"导弹主动销毁 {self}")

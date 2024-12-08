@@ -3,8 +3,10 @@ from game.bullets.commonBullet import CommonBullet
 from game.bullets.missile import MISSILE_TYPE, Missile
 from game.eventManager import EventManager
 from game.sceneManager import SceneManager
+
 from game.tank import Tank
 from game.weapons.weapon import Weapon
+
 
 
 class CommonWeapon(Weapon):
@@ -17,8 +19,9 @@ class CommonWeapon(Weapon):
     __shootBulletCount = 0
 
     def fire(self):
+        from game.scenes.gameScene import GameScene
         BULLET_DISAPPEAR_TIME_MS = 8 * 1000
-        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 - 4
+        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 4
 
         if self.owner.body.space:
 
@@ -33,9 +36,9 @@ class CommonWeapon(Weapon):
 
             # 超过指定时间子弹自动消失
             def __bulletOutOfTimeDisappear(bullet: CommonBullet) -> None:
-                if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-                    if gameObjectManager.containObject(bullet):
-                        gameObjectManager.removeObject(bullet)
+                if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                    if gameScene.gameObjectSpace.containObject(bullet):
+                        gameScene.gameObjectSpace.removeObject(bullet)
                         logger.debug(f"子弹超时消失 {bullet}")
                 EventManager.cancelTimer(event)
 
@@ -44,8 +47,8 @@ class CommonWeapon(Weapon):
                 EventManager.cancelTimer(event)
 
             bullet.Removed = __onBulletDisappear
-            if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-                gameObjectManager.registerObject(bullet)
+            if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                gameScene.gameObjectSpace.registerObject(bullet)
             EventManager.addHandler(event, lambda e: __bulletOutOfTimeDisappear(bullet))
             EventManager.setTimer(event, BULLET_DISAPPEAR_TIME_MS)
 

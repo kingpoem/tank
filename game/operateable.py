@@ -2,13 +2,10 @@ from abc import ABC
 from typing import final
 
 
-from pygame.event import Event
-from game.eventManager import EventManager
-from game.sceneManager import SceneManager
-
-
 class Operation:
 
+    type: int
+    """操作类型 有SERVER和CLIENT之分"""
     forwardKey: int
     """前进按键"""
     backKey: int
@@ -20,12 +17,21 @@ class Operation:
     shootKey: int
     """射击按键"""
 
-    def __init__(self, forwardKey: int, backKey: int, leftKey: int, rightKey: int, shootKey: int):
+    def __init__(
+        self,
+        forwardKey: int,
+        backKey: int,
+        leftKey: int,
+        rightKey: int,
+        shootKey: int,
+        type: int = 0,
+    ):
         self.forwardKey = forwardKey
         self.backKey = backKey
         self.leftKey = leftKey
         self.rightKey = rightKey
         self.shootKey = shootKey
+        self.type = type
         pass
 
 
@@ -50,21 +56,21 @@ class Operateable(ABC):
 
     @final
     def operate(self, delta: float):
-        from pygame import key
+        from game.keyPressedManager import KeyPressedManager as key
 
         if self.operation is None:
             return
-        pressed = key.get_pressed()
-        if pressed[self.operation.forwardKey]:
+
+        if key.isPressed(self.operation.forwardKey, self.operation.type):
             self.onForward(delta)
-        if pressed[self.operation.backKey]:
+        if key.isPressed(self.operation.backKey, self.operation.type):
             self.onBack(delta)
-        if pressed[self.operation.leftKey]:
+        if key.isPressed(self.operation.leftKey, self.operation.type):
             self.onLeft(delta)
-        if pressed[self.operation.rightKey]:
+        if key.isPressed(self.operation.rightKey, self.operation.type):
             self.onRight(delta)
 
-        if pressed[self.operation.shootKey]:
+        if key.isPressed(self.operation.shootKey, self.operation.type):
             self.onShoot(delta, self.__isFirstShoot)
             self.__isFirstShoot = False
         else:

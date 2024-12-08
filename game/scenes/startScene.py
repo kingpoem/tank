@@ -25,20 +25,15 @@ from pymunk import Space
 from pygame import image, transform
 from game.controls.floatMenu import FloatMenu
 from game.controls.selectionControl import Selection, SelectionControl
+from game.controls.textbox import TextBox
+from game.defines import BACKGROUND, FONT_COLOR, LARGE_TITLE_FONT, SELECTION_HEIGHT
 from game.eventManager import EventManager
-from game.gameObjectManager import GameObjectManager
-from game.gameResources import (
-    BACKGROUND,
-    FONT_COLOR,
-    LARGE_FONT,
-    LARGE_TITLE_FONT,
-    MEDIAN_FONT,
-    MENU_BACKGROUND,
-    easeLinear,
-)
+
 from game.gameSettings import GlobalSettingsManager
 from game.sceneManager import SCENE_TYPE, SceneManager
 from game.scenes.scene import Scene
+from game.spaces.gameObjectSpace import GAMEOBJECT_SPACE_TYPE, GameObjectSpace
+from online.onlineManager import OnlineManager
 
 
 class StartScene(Scene):
@@ -55,6 +50,8 @@ class StartScene(Scene):
     # __selections: list[SelectionControl]
     __selectionContorl: SelectionControl
 
+    __createServerMenu: FloatMenu
+    __connectServerMenu: FloatMenu
     __settingMenu: FloatMenu
 
     __SELECT_HEIGHT = 72
@@ -64,17 +61,14 @@ class StartScene(Scene):
     def ui(self) -> Surface:
         return self.__ui
 
-    @property
-    def gameObjectManager(self) -> GameObjectManager | None:
-        return None
-
     def __init__(self):
 
         selections = [
-            Selection(lambda: "本地游戏", self.__onLocalGameEnter),
-            Selection(lambda: "在线游戏", self.__onOnlineGameEnter),
-            Selection(lambda: "设置", self.__onSettingEnter),
-            Selection(lambda: "退出游戏", self.__onExitGameEnter),
+            Selection(lambda: "本地游戏", SELECTION_HEIGHT, self.__onLocalGameEnter),
+            Selection(lambda: "创建服务器", SELECTION_HEIGHT, self.__onCreateServerEnter),
+            Selection(lambda: "连接服务器", SELECTION_HEIGHT, self.__onConnectServerEnter),
+            Selection(lambda: "设置", SELECTION_HEIGHT, self.__onSettingEnter),
+            Selection(lambda: "退出游戏", SELECTION_HEIGHT, self.__onExitGameEnter),
         ]
 
         self.__ui = Surface((1440, 1280))
@@ -148,11 +142,12 @@ class StartScene(Scene):
                 1280,
                 960,
                 [
-                    Selection(lambda: "坦克速度与子弹速度并不等价", lambda: None),
+                    Selection(lambda: "坦克速度与子弹速度并不等价", SELECTION_HEIGHT, lambda: None),
                     Selection(
                         lambda: "坦克移动速度 {}".format(
                             GlobalSettingsManager.getGameSettings().tankSpeed
                         ),
+                        SELECTION_HEIGHT,
                         lambda: None,
                         __downTankSpeed,
                         __upTankSpeed,
@@ -161,6 +156,7 @@ class StartScene(Scene):
                         lambda: "子弹速度 {}".format(
                             GlobalSettingsManager.getGameSettings().commonBulletSpeed
                         ),
+                        SELECTION_HEIGHT,
                         lambda: None,
                         __downBulletSpeed,
                         __upBulletSpeed,
@@ -169,6 +165,7 @@ class StartScene(Scene):
                         lambda: "幽灵子弹速度 {}".format(
                             GlobalSettingsManager.getGameSettings().ghostBulletSpeed
                         ),
+                        SELECTION_HEIGHT,
                         lambda: None,
                         __downGhostBulletSpeed,
                         __upGhostBulletSpeed,
@@ -177,6 +174,7 @@ class StartScene(Scene):
                         lambda: "幽灵子弹速度增长率 {0:.2f}".format(
                             GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate * 100
                         ),
+                        SELECTION_HEIGHT,
                         lambda: None,
                         __downGhostSpeedIncreaseRate,
                         __upGhostSpeedIncreaseRate,
@@ -185,6 +183,7 @@ class StartScene(Scene):
                         lambda: "导弹速度 {}".format(
                             GlobalSettingsManager.getGameSettings().missileSpeed
                         ),
+                        SELECTION_HEIGHT,
                         lambda: None,
                         __downMissileSpeed,
                         __upMissileSpeed,
@@ -192,14 +191,71 @@ class StartScene(Scene):
                 ],
             ),
         )
-        # self.__settingMenu = pygame.Surface((1280, 960))
-        # self.__settingMenu.fill(MENU_BACKGROUND)
+
+        hostTextBox = TextBox("host", "localhost")
+        portTextBox = TextBox("port", "8900")
+
+        def __createServer():
+            try:
+                host = hostTextBox.text
+                port = int(portTextBox.text)
+                OnlineManager.createServer(host, port)
+            except Exception as e:
+                logger.exception(e)
+                return
+            
+
+        self.__createServerMenu = FloatMenu(
+            self.__ui,
+            1280,
+            960,
+            SelectionControl(
+                1280,
+                960,
+                [
+                    Selection(hostTextBox, SELECTION_HEIGHT),
+                    Selection(portTextBox, SELECTION_HEIGHT),
+                    Selection(lambda: "创建服务器", SELECTION_HEIGHT, __createServer),
+                ],
+            ),
+        )
+        hostTextBox2 = TextBox("host")
+        portTextBox2 = TextBox("port", "8900")
+        def __connectServer():
+            try:
+                host = hostTextBox2.text
+                port = int(portTextBox2.text)
+                OnlineManager.connectServer(host, port)
+            except Exception as e:
+                logger.exception(e)
+                return
+
+        self.__connectServerMenu = FloatMenu(
+            self.ui,
+            1280,
+            960,
+            SelectionControl(
+                1280,
+                960,
+                [
+                    Selection(hostTextBox2, SELECTION_HEIGHT),
+                    Selection(portTextBox2, SELECTION_HEIGHT),
+                    Selection(lambda: "连接服务器", SELECTION_HEIGHT, __connectServer),
+                ],
+            ),
+        )
 
         logger.debug("主菜单场景初始化完成")
 
     def process(self, event: Event):
         if self.__settingMenu.isMenuShow:
             self.__settingMenu.process(event)
+            return
+        if self.__createServerMenu.isMenuShow:
+            self.__createServerMenu.process(event)
+            return
+        if self.__connectServerMenu.isMenuShow:
+            self.__connectServerMenu.process(event)
             return
         self.__selectionContorl.process(event)
 
@@ -211,7 +267,7 @@ class StartScene(Scene):
 
         self.__ui.blit(self.__title, ((self.ui.get_width() - self.__title.get_width()) / 2, 48))
         self.__updateSelection(delta)
-        self.__updateSettingMenu(delta)
+        self.__updateMenus(delta)
 
     def __updateSelection(self, delta: float):
         self.__selectionContorl.update(delta)
@@ -224,13 +280,23 @@ class StartScene(Scene):
             ),
         )
 
-    def __updateSettingMenu(self, delta: float):
+    def __updateMenus(self, delta: float):
         self.__settingMenu.update(delta)
+        self.__createServerMenu.update(delta)
+        self.__connectServerMenu.update(delta)
 
     def __onLocalGameEnter(self):
         SceneManager.changeScene(SCENE_TYPE.GAME_SCENE)
 
-    def __onOnlineGameEnter(self): ...
+    def __onCreateServerEnter(self):
+        # from online.onlineManager import OnlineManager
+
+        # OnlineManager.createServer("127.0.0.1", 8900)
+        # logger.debug("创建服务器")
+        self.__createServerMenu.show()
+
+    def __onConnectServerEnter(self):
+        self.__connectServerMenu.show()
 
     def __onSettingEnter(self):
         self.__settingMenu.show()

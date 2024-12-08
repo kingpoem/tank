@@ -5,6 +5,7 @@ from game.eventManager import EventManager
 from game.gameObject import GameObject
 
 from game.sceneManager import SceneManager
+from game.scenes.gameScene import GameScene
 from game.weapons.weapon import Weapon
 
 
@@ -50,13 +51,11 @@ class RemoteControlMissileWeapon(Weapon):
 
             # 超过指定时间子弹自动消失
             def __bulletOutOfTimeDisappear() -> None:
-                if (
-                    gameObjectManager := SceneManager.getCurrentScene().gameObjectManager
-                ) is not None:
-                    if self.__missile is not None and gameObjectManager.containObject(
+                if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                    if self.__missile is not None and gameScene.gameObjectSpace.containObject(
                         self.__missile
                     ):
-                        gameObjectManager.removeObject(self.__missile)
+                        gameScene.gameObjectSpace.removeObject(self.__missile)
                         logger.debug(f"导弹超时消失 {self.__missile}")
                 EventManager.cancelTimer(self.__MISSILE_DISAPPEAR_EVENT_TYPE)
 
@@ -72,8 +71,8 @@ class RemoteControlMissileWeapon(Weapon):
                 self.owner.operation = None
                 self.__missile.operation = o
                 self.__missile.Removed = __onBulletDisappear
-                if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-                    gameObjectManager.registerObject(self.__missile)
+                if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                    gameScene.gameObjectSpace.registerObject(self.__missile)
                 EventManager.addHandler(
                     self.__MISSILE_DISAPPEAR_EVENT_TYPE, lambda e: __bulletOutOfTimeDisappear()
                 )

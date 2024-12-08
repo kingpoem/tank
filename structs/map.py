@@ -1,5 +1,6 @@
 # 地图格子尺寸
 from enum import Enum
+import pickle
 from random import choice, randint
 
 
@@ -134,3 +135,7 @@ class Map:
                 x = randint(1, self.__width - 2)
                 y = randint(1, self.__height - 2)
             self[x, y] = MAP_PLOT_TYPE.MAP_EMPTY
+
+if __name__ == "__main__":
+    map = Map(31, 31)
+    print(len(pickle.dumps(map)))

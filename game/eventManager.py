@@ -1,8 +1,6 @@
 from loguru import logger
 from pygame import USEREVENT
-
 from pygame.event import Event, post
-from pygame.time import set_timer
 from typing import Callable
 
 
@@ -10,15 +8,20 @@ class EventManager:
 
     class __Timer:
         event: int | Event
+        __initTimeMs : float
         timeMs: float
         loops: int
-        isEndless = bool
+        isEndless : bool
 
         def __init__(self, event: int | Event, timeMs: float, loops: int = 0):
             self.event = event
+            self.__initTimeMs = timeMs
             self.timeMs = timeMs
             self.loops = loops
             self.isEndless = self.loops == 0
+        
+        def reset(self):
+            self.timeMs = self.__initTimeMs
 
     # class __EventHandler:
     #     eventType: int
@@ -47,7 +50,12 @@ class EventManager:
 
     @staticmethod
     @logger.catch
-    def removeHandler(eventType: int, handler: Callable[[Event], None]):
+    def removeHandler(eventType: int, handler: Callable[[Event], None] | None = None):
+        if eventType not in EventManager.__eventHandlers:
+            return
+        if handler is None:
+            EventManager.__eventHandlers.pop(eventType)
+            return
         if handler in EventManager.__eventHandlers[eventType]:
             EventManager.__eventHandlers[eventType].remove(handler)
 
@@ -69,6 +77,7 @@ class EventManager:
                 EventManager.raiseEvent(timer.event)
 
             if timer.isEndless:
+                timer.reset()
                 continue
             timer.loops -= 1
             if timer.loops <= 0:
@@ -100,6 +109,7 @@ class EventManager:
     @staticmethod
     def raiseEventType(eventType: int):
         EventManager.raiseEvent(Event(eventType))
+        logger.debug(f"触发事件 {eventType}")
 
     @staticmethod
     def raiseEvent(event: Event):

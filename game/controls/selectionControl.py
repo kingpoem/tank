@@ -1,5 +1,6 @@
-from typing import Callable
+from typing import Callable, Optional
 
+from loguru import logger
 from pygame import (
     K_DOWN,
     K_KP_ENTER,
@@ -15,19 +16,27 @@ from pygame import (
 )
 from pygame.event import Event
 from game.controls.control import Control
-from game.gameResources import FONT_COLOR, MEDIAN_FONT, easeLinear
+from game.defines import FONT_COLOR, MEDIAN_FONT
+from utils.easingFunc import easeLinear
 
 
 class Selection:
 
-    __captionFunc: Callable[[], str]
-    __enterAction: Callable[[], None]
+    __content: Callable[[], str] | Control
+    __height: float
+    __enterAction: Callable[[], None] | None
     __leftAction: Callable[[], None] | None
     __rightAction: Callable[[], None] | None
 
     @property
-    def caption(self):
-        return self.__captionFunc()
+    def content(self):
+        if isinstance(self.__content, Control):
+            return self.__content
+        return self.__content()
+
+    @property
+    def height(self):
+        return self.__height
 
     @property
     def enterAction(self):
@@ -43,12 +52,19 @@ class Selection:
 
     def __init__(
         self,
-        captionResult: Callable[[], str],
-        enterAction: Callable[[], None],
+        content: Callable[[], str] | Control,
+        height: float | None = None,
+        enterAction: Callable[[], None] | None = None,
         leftAction: Callable[[], None] | None = None,
         rightAction: Callable[[], None] | None = None,
     ):
-        self.__captionFunc = captionResult
+
+        self.__content = content
+        if height is None:
+            assert isinstance(content, Control)
+            self.__height = content.ui.get_height()
+        else:
+            self.__height = height
         self.__enterAction = enterAction
         self.__leftAction = leftAction
         self.__rightAction = rightAction
@@ -57,7 +73,7 @@ class Selection:
 class SelectionControl(Control):
 
     __SELECT_SCALE = 1.2
-    __SELECTION_HEIGHT = 72
+
     __SELECTION_SIGN_HEIGHT = 24
 
     __selectionControlUI: Surface
@@ -77,16 +93,24 @@ class SelectionControl(Control):
         selections: list[Selection],
     ):
         self.__selections = selections
-        self.__selectionScale = [1 for _ in range(len(selections))]
+        self.__selectionScale = [
+            1 / SelectionControl.__SELECT_SCALE for _ in range(len(selections))
+        ]
         self.__selectionControlUI = Surface((width, height)).convert_alpha()
         self.__selectionControlUI.fill((0, 0, 0, 0))
         self.update(0)
 
     def process(self, event: Event):
+        select = self.__selections[self.__selectIndex]
+        # logger.debug(f"{select.content}")
+        if isinstance(select.content, Control):
+            select.content.process(event)
         if event.type == KEYDOWN:
             if event.key == K_RETURN or event.key == K_KP_ENTER:
                 if 0 <= self.__selectIndex <= len(self.__selections):
-                    self.__selections[self.__selectIndex].enterAction()
+                    select = self.__selections[self.__selectIndex]
+                    if select.enterAction is not None:
+                        select.enterAction()
             elif event.key == K_LEFT:
                 if 0 <= self.__selectIndex <= len(self.__selections):
                     select = self.__selections[self.__selectIndex]
@@ -106,6 +130,7 @@ class SelectionControl(Control):
 
     def update(self, delta: float):
 
+        nowTop : float = 96
         for i, select in enumerate(self.__selections):
             if self.__selectIndex == i:
                 self.__selectionScale[i] = easeLinear(
@@ -118,53 +143,50 @@ class SelectionControl(Control):
                     1 / SelectionControl.__SELECT_SCALE - 0.02,
                     1,
                 )
-
-            if (
-                self.__selectionScale[i] < (1 / SelectionControl.__SELECT_SCALE)
-                and not self.__selectIndex == i
+            
+            # 满足条件就更新画面
+            if self.__selectIndex == i or self.__selectionScale[i] >= (
+                1 / SelectionControl.__SELECT_SCALE
             ):
-                continue
-            # self.__selectionControlUI.fill(
-            #     (0, 0, 0, 0),
-            #     Rect(
-            #         0,
-            #         i * SelectionControl.__SELECTION_HEIGHT + 96,
-            #         self.__selectionControlUI.get_width(),
-            #         SelectionControl.__SELECTION_HEIGHT,
-            #     ),
-            # )
-            text = transform.smoothscale_by(
-                MEDIAN_FONT.render(select.caption, FONT_COLOR)[0],
-                min(max(self.__selectionScale[i], 1 / SelectionControl.__SELECT_SCALE), 1),
-            )
-
-            basePoint = (
-                (self.__selectionControlUI.get_width() - text.get_width()) / 2,
-                96 + i * SelectionControl.__SELECTION_HEIGHT,
-            )
-            self.__selectionControlUI.fill(
-                (0, 0, 0, 0),
-                Rect(
-                    0,
-                    basePoint[1],
-                    self.__selectionControlUI.get_width(),
-                    SelectionControl.__SELECTION_HEIGHT,
-                ),
-            )
-            self.__selectionControlUI.blit(text, basePoint)
-            if self.__selectIndex == i:
-                rightPoint = (basePoint[0] - 16, basePoint[1] + text.get_height() / 2)
-                upPoint = (
-                    rightPoint[0] - 16,
-                    rightPoint[1] - SelectionControl.__SELECTION_SIGN_HEIGHT / 2,
+                if isinstance(select.content,Control):
+                    select.content.update(delta)
+                contentSurface = transform.smoothscale_by(
+                    (
+                        MEDIAN_FONT.render(select.content, FONT_COLOR)[0]
+                        if isinstance(select.content, str)
+                        else select.content.ui
+                    ),
+                    min(max(self.__selectionScale[i], 1 / SelectionControl.__SELECT_SCALE), 1),
                 )
-                downPoint = (
-                    rightPoint[0] - 16,
-                    rightPoint[1] + SelectionControl.__SELECTION_SIGN_HEIGHT / 2,
+                basePoint = (
+                    (self.__selectionControlUI.get_width() - contentSurface.get_width()) / 2,
+                    nowTop,
                 )
-                gfxdraw.filled_polygon(
-                    self.__selectionControlUI, (rightPoint, upPoint, downPoint), FONT_COLOR
+                self.__selectionControlUI.fill(
+                    (0, 0, 0, 0),
+                    Rect(
+                        0,
+                        basePoint[1],
+                        self.__selectionControlUI.get_width(),
+                        select.height,
+                    ),
                 )
+                
+                self.__selectionControlUI.blit(contentSurface, basePoint)
+                if self.__selectIndex == i:
+                    rightPoint = (basePoint[0] - 16, basePoint[1] + contentSurface.get_height() / 2)
+                    upPoint = (
+                        rightPoint[0] - 16,
+                        rightPoint[1] - SelectionControl.__SELECTION_SIGN_HEIGHT / 2,
+                    )
+                    downPoint = (
+                        rightPoint[0] - 16,
+                        rightPoint[1] + SelectionControl.__SELECTION_SIGN_HEIGHT / 2,
+                    )
+                    gfxdraw.filled_polygon(
+                        self.__selectionControlUI, (rightPoint, upPoint, downPoint), FONT_COLOR
+                    )
+            nowTop += select.height
 
     def render(self, screen: Surface): ...
 

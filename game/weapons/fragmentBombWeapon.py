@@ -8,6 +8,7 @@ from game.bullets.fragmentBullet import FragmentBullet
 from game.eventManager import EventManager
 from game.gameObject import GameObject
 from game.sceneManager import SceneManager
+from game.scenes.gameScene import GameScene
 from game.weapons.weapon import Weapon
 
 
@@ -21,7 +22,7 @@ class FragmentBombWeapon(Weapon):
 
     def fire(self):
         BULLET_DISAPPEAR_TIME_MS = 8 * 1000
-        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 - 4
+        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 6
 
         self.__isShooted = True
 
@@ -34,9 +35,9 @@ class FragmentBombWeapon(Weapon):
 
         # 超过指定时间子弹自动消失
         def __bulletOutOfTimeDisappear(bullet: GameObject, e: int) -> None:
-            if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-                if gameObjectManager.containObject(bullet):
-                    gameObjectManager.removeObject(bullet)
+            if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                if gameScene.gameObjectSpace.containObject(bullet):
+                    gameScene.gameObjectSpace.removeObject(bullet)
                     logger.debug(f"子弹超时消失 {bullet}")
                 EventManager.cancelTimer(e)
 
@@ -53,27 +54,23 @@ class FragmentBombWeapon(Weapon):
                         angle,
                     )
                 )
-                if (
-                    gameObjectManager := SceneManager.getCurrentScene().gameObjectManager
-                ) is not None:
-                    gameObjectManager.registerObject(frags[i])
+                if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+                    gameScene.gameObjectSpace.registerObject(frags[i])
 
             eventf = EventManager.allocateEventType()
 
             def __onFragBulletDisappear(frags: Sequence[FragmentBullet]):
-                if (
-                    gameObjectManager := SceneManager.getCurrentScene().gameObjectManager
-                ) is not None:
+                if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
                     for frag in frags:
-                        gameObjectManager.removeObject(frag)
+                        gameScene.gameObjectSpace.removeObject(frag)
                     logger.debug(f"破片超时消失")
 
             EventManager.addHandler(eventf, lambda e: __onFragBulletDisappear(frags))
             EventManager.setTimer(eventf, 2000, 1)
 
         bullet.Removed = __onBulletDisappear
-        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-            gameObjectManager.registerObject(bullet)
+        if isinstance(gameScene := SceneManager.getCurrentScene(),GameScene):
+            gameScene.gameObjectSpace.registerObject(bullet)
         EventManager.addHandler(event, lambda e: __bulletOutOfTimeDisappear(bullet, event))
         EventManager.setTimer(event, BULLET_DISAPPEAR_TIME_MS, 1)
 

@@ -1,12 +1,13 @@
 from random import randint, choice
 from enum import Enum
+from typing import overload
 
 from pygame import Surface, draw, gfxdraw
 import pygame
 from pymunk import Body, Segment, Shape, Space, Poly
 
 from game.gameObject import GameObject
-from game.gameResources import BACKGROUND
+
 from structs.map import MAP_PLOT_TYPE, Map
 
 
@@ -45,11 +46,13 @@ class GameMap(GameObject):
     def map(self):
         return self.__map
 
-    def __init__(self, width: int, height: int):
-        self.__map = Map(width, height)
+
+    def __init__(self, mapData : Map):
+        from game.defines import BACKGROUND
+        self.__map = mapData
 
         self.surface = pygame.Surface(
-            (MARGIN_X * 2 + PLOT_WIDTH * width, MARGIN_Y * 2 + PLOT_HEIGHT * height)
+            (MARGIN_X * 2 + PLOT_WIDTH * mapData.width, MARGIN_Y * 2 + PLOT_HEIGHT * mapData.height)
         )
         self.surface.fill(BACKGROUND)
 
@@ -230,6 +233,8 @@ class GameMap(GameObject):
         for shape in self.shapes:
             shape.elasticity = 1
             shape.friction = 0
+
+
 
     def getPlotPos(self,x : int,y : int):
         return (

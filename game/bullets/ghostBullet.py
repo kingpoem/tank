@@ -6,7 +6,7 @@ from pymunk import Body, Poly, Vec2d
 from game.bullets.commonBullet import BULLET_COLLISION_TYPE, CommonBullet
 from game.eventManager import EventManager
 from game.gameObject import GameObject
-from game.gameResources import BACKGROUND
+from game.defines import BACKGROUND
 from game.gameSettings import GlobalSettingsManager
 
 

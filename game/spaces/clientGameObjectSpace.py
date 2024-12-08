@@ -1,14 +1,17 @@
+
+
+
+
 from loguru import logger
 from pygame import Rect, Surface
 from pymunk import Body, Space
 from game.gameObject import GameObject
+from game.spaces.gameObjectSpace import GameObjectSpace
 
 
-class GameObjectManager:
-
+class ClientGameObjectSpace(GameObjectSpace):
     __objects: list[GameObject]
     __space : Space
-
     __spaceRegion: Rect | None = None
     """
     空间范围
@@ -17,7 +20,7 @@ class GameObjectManager:
 
     @property
     def objects(self):
-        return self.__objects
+        return tuple(self.__objects)
     
     @property
     def space(self):
@@ -30,9 +33,10 @@ class GameObjectManager:
     def spaceRegion(self, value: Rect | None):
         self.__spaceRegion = value
 
-    def __init__(self,space : Space):
+    def __init__(self):
         self.__objects = list()
-        self.__space = space
+        self.__space = Space()
+        self.__space.damping = 0
 
     def registerObject(self, object: GameObject):
         if object in self.__objects:
@@ -62,7 +66,9 @@ class GameObjectManager:
         for obj in self.objects:
             if isinstance(obj, Operateable):
                 obj.operate(delta)
-        self.__space.step(delta)
+        DETAIL_NUM = 8
+        for i in range(DETAIL_NUM):
+            self.__space.step(delta / DETAIL_NUM)
         if self.__spaceRegion is not None:
             for obj in self.__objects:
                 if not self.__spaceRegion.collidepoint(obj.body.position):
@@ -81,3 +87,4 @@ class GameObjectManager:
 
     def containObject(self, object: GameObject):
         return object in self.__objects
+

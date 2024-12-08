@@ -29,21 +29,22 @@ class FragmentBomb(GameObject):
         )
         self.body.velocity_func = __vec_func
 
-        self.shapes = [Circle(self.body, 8)]
+        self.shapes = [Circle(self.body, 6)]
         # 设置子弹摩擦力为0
         self.shapes[0].friction = 0
-
+        # 设置弹性系数为 1，完全反弹
+        self.shapes[0].elasticity = 1
+        # self.shapes[0].sensor = True
         # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
         event = EventManager.allocateEventType()
 
-        def __delayCollisionTypeEventHandler():
+        def __delayEnableCollisionEventHandler():
+            # self.shapes[0].sensor = False
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
             EventManager.cancelTimer(event)
 
-        EventManager.addHandler(event, lambda e: __delayCollisionTypeEventHandler())
+        EventManager.addHandler(event, lambda e: __delayEnableCollisionEventHandler())
         EventManager.setTimer(event, 100)
-        # 设置弹性系数为 1，完全反弹
-        self.shapes[0].elasticity = 1
 
     def render(self, screen: Surface):
         if self.body.space:

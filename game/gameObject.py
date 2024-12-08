@@ -52,3 +52,10 @@ class GameObject(ABC):
         移除物理世界物体
         """
         space.remove(self.body,*self.shapes)
+
+
+    def onEntered(self):
+        ...
+
+    def onRemoved(self):
+        ...

@@ -1,4 +1,7 @@
 from enum import Enum
+from typing import Any
+
+from loguru import logger
 
 from game.scenes.scene import Scene
 
@@ -6,6 +9,8 @@ from game.scenes.scene import Scene
 class SCENE_TYPE(Enum):
     START_SCENE = 0
     GAME_SCENE = 1
+    CLIENT_GAME_SCENE = 2
+    SERVER_GAME_SCENE = 3
 
 
 class SceneManager:
@@ -30,22 +35,33 @@ class SceneManager:
         return SceneManager.__sceneList[SceneManager.__currentSceneType]
 
     @staticmethod
-    def changeScene(sceneType: SCENE_TYPE,delOtherScene : bool = True):
-        SceneManager.__currentSceneType = sceneType
+    def changeScene(sceneType: SCENE_TYPE, delOtherScene: bool = True, *args: Any, **kwargs: Any):
+        
         if sceneType not in SceneManager.__sceneList:
-            SceneManager.__sceneList[sceneType] = SceneManager.__sceneTypeToScene(sceneType)
-            SceneManager.getCurrentScene().onEntered()
+            SceneManager.__sceneList[sceneType] = SceneManager.__sceneTypeToScene(
+                sceneType, *args, **kwargs
+            )
+            SceneManager.__sceneList[sceneType].onEntered()
+            logger.debug(f"场景进入 {sceneType}")
         if delOtherScene:
             other_scene = [cs for cs in SceneManager.__sceneList if not cs == sceneType]
             for scene in other_scene:
                 SceneManager.__sceneList[scene].onLeaved()
                 SceneManager.__sceneList.pop(scene)
-
+                logger.debug(f"场景退出 {scene}")
+        SceneManager.__currentSceneType = sceneType
 
     @staticmethod
-    def __sceneTypeToScene(sceneType: SCENE_TYPE):
+    def __sceneTypeToScene(sceneType: SCENE_TYPE, *args: Any, **kwargs: Any):
         from game.scenes.startScene import StartScene
-        from game.scenes.gameScene import GameScene
+        from game.scenes.localGameScene import LocalGameScene
+        from game.scenes.clientGameScene import ClientGameScene
+        from game.scenes.serverGameScene import ServerGameScene
 
-        SCENE_LIST: list[type[Scene]] = [StartScene, GameScene]
-        return SCENE_LIST[sceneType.value]()
+        SCENE_LIST: list[type[Scene]] = [
+            StartScene,
+            LocalGameScene,
+            ClientGameScene,
+            ServerGameScene,
+        ]
+        return SCENE_LIST[sceneType.value](*args, **kwargs)

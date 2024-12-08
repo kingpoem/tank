@@ -5,8 +5,9 @@ from pygame import Surface,transform
 from pymunk import Arbiter, Body, CollisionHandler, Poly, ShapeFilter, Space
 from game.gameObject import GameObject
 from game.sceneManager import SceneManager
+
 from game.tank import TANK_COLLISION_TYPE, Tank
-from typing import Any
+from typing import Any, overload
 
 GAMEITEM_COLLISION_TYPE = 3
 
@@ -18,6 +19,7 @@ class GameItem(GameObject, ABC):
 
     __collisionHandler: CollisionHandler
 
+    
     def __init__(self, initX: float, initY: float):
         self.surface = Surface((30, 30))
         self.surface.set_colorkey((0, 0, 0))
@@ -33,6 +35,7 @@ class GameItem(GameObject, ABC):
             shape.collision_type = GAMEITEM_COLLISION_TYPE
             # shape.filter = ShapeFilter(categories=0b0001)
 
+
     def render(self, screen: Surface):
         r = transform.rotate(self.surface,math.degrees(-self.body.angle))
         screen.blit(r, r.get_rect(center=self.body.position))
@@ -46,17 +49,18 @@ class GameItem(GameObject, ABC):
 
     @staticmethod
     def __onTankTouched(arbiter: Arbiter, space: Space, data: dict[Any, Any]):
-        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
+        from game.scenes.gameScene import GameScene
+        if isinstance((gameScene := SceneManager.getCurrentScene()),GameScene):
 
-            item = gameObjectManager.getGameObjectByBody(
+            item = gameScene.gameObjectSpace.getGameObjectByBody(
                 arbiter.shapes[0].body
             )
-            tank = gameObjectManager.getGameObjectByBody(
+            tank = gameScene.gameObjectSpace.getGameObjectByBody(
                 arbiter.shapes[1].body
             )
             if isinstance(item, GameItem) and isinstance(tank, Tank):
                 item.onTouched(tank)
-                gameObjectManager.removeObject(item)
+                gameScene.gameObjectSpace.removeObject(item)
             logger.debug(f"道具被坦克碰撞 {item} {tank}")
         return True
 

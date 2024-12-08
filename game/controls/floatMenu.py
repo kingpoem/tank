@@ -3,7 +3,9 @@ from game.controls.control import Control
 from pygame import K_ESCAPE, KEYDOWN, Surface
 from pygame import Surface
 
-from game.gameResources import MENU_BACKGROUND, MENU_ENV_BACKGROUND, easeLinear
+from game.defines import MENU_BACKGROUND, MENU_ENV_BACKGROUND
+from utils.easingFunc import easeLinear
+
 
 
 class FloatMenu(Control):
@@ -59,7 +61,7 @@ class FloatMenu(Control):
                 -10,
                 1,
             )
-            self.__envMaskAlpha = int(easeLinear(8 * delta, self.__envMaskAlpha, 0, 1))
+            self.__envMaskAlpha = int(easeLinear(8 * delta, self.__envMaskAlpha, -0.3, 1))
 
         if self.__menuBottom <= 0:
             return

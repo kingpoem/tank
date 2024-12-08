@@ -1,20 +1,20 @@
 import os
-
 import sys
 from loguru import logger
 import pygame
-import pygame.freetype
-
-from pygame import KEYDOWN, Surface
+from pygame import Surface, transform
 
 
-from game.eventManager import EventManager
+from .eventManager import EventManager
+from .keyPressedManager import KeyPressedManager
+from .sceneManager import SceneManager
 
 from pymunk.pygame_util import DrawOptions
-from game.sceneManager import SceneManager
 
 
-FPS = 120
+FPS = 60
+
+# FIXME 高分辨率机器上的缩放问题
 
 
 class GameLoop:
@@ -44,7 +44,7 @@ class GameLoop:
         pygame.init()
 
         # 初始化游戏屏幕
-        GameLoop.screen = pygame.display.set_mode((1440, 1280))
+        GameLoop.screen = pygame.display.set_mode((1280, 960), pygame.RESIZABLE)
 
         # 初始化场景
         SceneManager.init()
@@ -53,7 +53,7 @@ class GameLoop:
 
         GameLoop.__debugOptions = DrawOptions(GameLoop.screen)
 
-        import game.gameResources
+        import game.defines
 
     @staticmethod
     def run():
@@ -74,7 +74,7 @@ class GameLoop:
         clock = pygame.time.Clock()
         pygame.time.set_timer(pygame.USEREVENT, 1000)
         preTicks = 0
-        from game.gameResources import BACKGROUND, FONT_COLOR, MEDIAN_FONT, SMALL_FONT
+        from game.defines import BACKGROUND, FONT_COLOR, MEDIAN_FONT, SMALL_FONT
 
         while GameLoop.isRunning:
 
@@ -88,19 +88,19 @@ class GameLoop:
                 GameLoop.__onGameQuit()
                 break
 
+            # OnlineManager.checkConnection()
             EventManager.updateTimer(GameLoop.delta)
             SceneManager.getCurrentScene().update(GameLoop.delta)
 
             GameLoop.screen.fill(BACKGROUND)
-            screen = GameLoop.screen
-            ui = SceneManager.getCurrentScene().ui
-            GameLoop.screen.blit(
-                SceneManager.getCurrentScene().ui,
-                (
-                    (screen.get_width() - ui.get_width()) / 2,
-                    (screen.get_height() - ui.get_height()) / 2,
-                ),
+            widthScale = GameLoop.screen.get_width() / SceneManager.getCurrentScene().ui.get_width()
+            heightScale = (
+                GameLoop.screen.get_height() / SceneManager.getCurrentScene().ui.get_height()
             )
+            scaled = transform.smoothscale_by(
+                SceneManager.getCurrentScene().ui, min(widthScale, heightScale)
+            )
+            GameLoop.screen.blit(scaled, scaled.get_rect(center=GameLoop.screen.get_rect().center))
             SceneManager.getCurrentScene().render(GameLoop.screen)
 
             # if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
@@ -113,9 +113,10 @@ class GameLoop:
             SMALL_FONT.render_to(
                 GameLoop.screen, (0, 24), f"delta: {GameLoop.delta * 1000:.1f}ms", FONT_COLOR
             )
-            pygame.display.update()
+            pygame.display.flip()
 
             clock.tick(FPS)
+
         pygame.quit()
         logger.info("游戏退出")
 
@@ -123,17 +124,19 @@ class GameLoop:
     def __handleEvent():
         events = pygame.event.get()
         for event in events:
+            # logger.debug(f"接收事件 {event.type}")
             EventManager.handleEvent(event)
+            KeyPressedManager.processKeyPressed(event)
             SceneManager.getCurrentScene().process(event)
             match event.type:
                 case pygame.QUIT:
                     GameLoop.isRunning = False
                 case _:
                     # 处理剩余的事件
-                    pass
-
-        pass
+                    ...
 
     @staticmethod
     def __onGameQuit():
-        pass
+        from online.onlineManager import OnlineManager
+
+        OnlineManager.close()

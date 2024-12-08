@@ -17,7 +17,7 @@ class FragmentBullet(GameObject):
 
     def __init__(self, initX: float, initY: float, initAngle: float):
         def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
-            body.update_velocity(body, (0, 0), 0.99, dt)
+            body.update_velocity(body, (0, 0),1, dt)
             # body.velocity = body.rotation_vector * 300
             pass
 

@@ -8,17 +8,19 @@ from pymunk import Arbiter, Body, CollisionHandler, Shape, Space, Poly
 from game.bullets.commonBullet import CommonBullet, BULLET_COLLISION_TYPE
 from game.eventManager import EventManager
 from game.gameObject import GameObject
-from game.gameObjectManager import GameObjectManager
 from game.gameSettings import GlobalSettingsManager
 from game.operateable import Operateable, Operation
 from game.sceneManager import SceneManager
+
 from game.shootable import Shootable
 from game.weapons.weapon import Weapon
 from game.weapons.weaponFactory import WEAPON_TYPE, WeaponFactory
+from pygame.event import Event
 
 # TANK_HEIGHT = 60
 
 TANK_COLLISION_TYPE = 1
+TANK_REMOVED_EVENT_TYPE = EventManager.allocateEventType()
 
 
 class TANK_STYLE(Enum):
@@ -34,7 +36,7 @@ class Tank(GameObject, Shootable, Operateable):
     TANK_WIDTH = 50
 
     TANK_MOVE_SPEED = 700000
-    ROTATE_SPEED = 160
+    ROTATE_SPEED = 16
 
     __collisionHandler: CollisionHandler | None = None
 
@@ -71,12 +73,6 @@ class Tank(GameObject, Shootable, Operateable):
         else:
             self.weapon = weapon
 
-        # o_img = image.load(style.value).convert_alpha()
-        # self.surface = transform.smoothscale_by(
-        #     o_img,
-        #     Tank.TANK_WIDTH / o_img.get_width(),
-        # )
-        # self.img.fill((255, 255, 0, 0), special_flags=pygame.BLEND_RGBA_MAX)
         self.body = Body(body_type=Body.DYNAMIC)
         self.body.position = (initX, initY)
         self.body.moment = 1000000
@@ -171,37 +167,45 @@ class Tank(GameObject, Shootable, Operateable):
 
     @staticmethod
     def __onBulletCollision(arbiter: Arbiter, space: Space, data: dict[Any, Any]):
-        if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-            tank = gameObjectManager.getGameObjectByBody(arbiter.shapes[0].body)
-            bullet = gameObjectManager.getGameObjectByBody(arbiter.shapes[1].body)
+        from game.scenes.gameScene import GameScene
+
+        if isinstance((gameScene := SceneManager.getCurrentScene()), GameScene):
+            tank = gameScene.gameObjectSpace.getGameObjectByBody(arbiter.shapes[0].body)
+            bullet = gameScene.gameObjectSpace.getGameObjectByBody(arbiter.shapes[1].body)
             if bullet is not None:
-                gameObjectManager.removeObject(bullet)
+                gameScene.gameObjectSpace.removeObject(bullet)
             if tank is not None:
-                gameObjectManager.removeObject(tank)
+                gameScene.gameObjectSpace.removeObject(tank)
             logger.debug(f"坦克被子弹击中 {tank} {bullet}")
 
     def onForward(self, delta: float):
         tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
+        # 力的大小要与帧间隔成反比，因为 Ft = mv
+        # 而且力会在物理世界刷新后消失
+        # 所以要使获得速度一致，而帧间隔缩小，力就要增大
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * tankSpeed * 100000 * delta, self.body.position
+            self.body.rotation_vector * tankSpeed * 1000 / delta, self.body.position
         )
 
     def onBack(self, delta: float):
         tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * -tankSpeed * 100000 * delta, self.body.position
+            self.body.rotation_vector * -tankSpeed * 1000 / delta, self.body.position
         )
 
     def onLeft(self, delta: float):
-        self.body.angular_velocity = -Tank.ROTATE_SPEED * delta
+        self.body.angular_velocity = -Tank.ROTATE_SPEED
 
     def onRight(self, delta: float):
-        self.body.angular_velocity = Tank.ROTATE_SPEED * delta
+        self.body.angular_velocity = Tank.ROTATE_SPEED
 
     def onShoot(self, delta: float, isFirstShoot: bool):
-        if (
-            isFirstShoot
-            and (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None
-        ):
-            if gameObjectManager.containObject(self):
+        from game.scenes.gameScene import GameScene
+
+        if isFirstShoot and isinstance((gameScene := SceneManager.getCurrentScene()), GameScene):
+            if gameScene.gameObjectSpace.containObject(self):
                 self.shoot()
+
+    def onRemoved(self):
+        EventManager.raiseEvent(Event(TANK_REMOVED_EVENT_TYPE, {"tank": self}))
+        logger.debug(f"坦克被移除 {self}")
