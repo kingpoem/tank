@@ -6,6 +6,7 @@ from typing import Sequence
 from loguru import logger
 from pygame import K_DOWN, K_ESCAPE, KEYDOWN, QUIT, Rect, Surface
 import pygame
+from pygame import transform
 from pygame.event import Event
 from pygame.freetype import Font
 from pymunk import Space
@@ -37,6 +38,8 @@ from game.tank import TANK_REMOVED_EVENT_TYPE, Tank
 SCORE_UI_HEIGHT = 192
 GAME_OVER_EVENT_TYPE: int = EventManager.allocateEventType()
 START_NEW_TURN_EVENT_TYPE: int = EventManager.allocateEventType()
+GAME_MAP_UI_MAX_WIDTH = MAP_MAX_WIDTH * PLOT_WIDTH + MARGIN_X * 2
+GAME_MAP_UI_MAX_HEIGHT = MAP_MAX_HEIGHT * PLOT_HEIGHT + MARGIN_Y * 2
 
 
 class GameScene(Scene, ABC):
@@ -100,13 +103,16 @@ class GameScene(Scene, ABC):
         self.__redTank, self.__greenTank = self.generateTanks()
         self.__gameItemManager = GameItemManager(self.__gameMap)
         self.__gameMapUI = pygame.Surface(
-            (MAP_MAX_WIDTH * PLOT_WIDTH + MARGIN_X * 2, MAP_MAX_HEIGHT * PLOT_HEIGHT + MARGIN_Y * 2)
+            (
+                self.__gameMap.width * PLOT_WIDTH + MARGIN_X * 2,
+                self.__gameMap.height * PLOT_HEIGHT + MARGIN_Y * 2,
+            )
         )
-        self.__scoreUI = pygame.Surface((self.__gameMapUI.get_width(), SCORE_UI_HEIGHT))
+        self.__scoreUI = pygame.Surface((GAME_MAP_UI_MAX_WIDTH, SCORE_UI_HEIGHT))
         self.__ui = pygame.Surface(
             (
-                self.__gameMapUI.get_width(),
-                self.__gameMapUI.get_height() + self.__scoreUI.get_height(),
+                GAME_MAP_UI_MAX_WIDTH,
+                GAME_MAP_UI_MAX_HEIGHT + self.__scoreUI.get_height(),
             )
         )
         self.__gameMenu = FloatMenu(
@@ -230,14 +236,18 @@ class GameScene(Scene, ABC):
             ),
         )
         self.__ui.fill(BACKGROUND)
-        self.__ui.blit(
+        scale_map = transform.smoothscale_by(
             self.__gameMapUI,
-            (
-                (self.__gameMapUI.get_width() - self.__gameMap.surface.get_width()) / 2,
-                (self.__gameMapUI.get_height() - self.__gameMap.surface.get_height()) / 2,
+            min(
+                GAME_MAP_UI_MAX_WIDTH / self.__gameMapUI.get_width(),
+                GAME_MAP_UI_MAX_HEIGHT / self.__gameMapUI.get_height(),
             ),
         )
-        self.__ui.blit(self.__scoreUI, (0, self.__gameMapUI.get_height()))
+        self.__ui.blit(
+            scale_map,
+            scale_map.get_rect(center=(GAME_MAP_UI_MAX_WIDTH / 2,GAME_MAP_UI_MAX_HEIGHT / 2)),
+        )
+        self.__ui.blit(self.__scoreUI, (0, GAME_MAP_UI_MAX_HEIGHT))
 
     def updateGameMenu(self, delta: float):
         self.__gameMenu.update(delta)
@@ -261,6 +271,12 @@ class GameScene(Scene, ABC):
         if self.gameObjectSpace.containObject(self.greenTank):
             self.__greenScore += 1
         if self.startNewTurn():
+            self.__gameMapUI = pygame.Surface(
+                (
+                    self.__gameMap.width * PLOT_WIDTH + MARGIN_X * 2,
+                    self.__gameMap.height * PLOT_HEIGHT + MARGIN_Y * 2,
+                )
+            )
             EventManager.raiseEventType(START_NEW_TURN_EVENT_TYPE)
 
     def onTankRemoved(self, tank: Tank):

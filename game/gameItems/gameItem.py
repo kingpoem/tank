@@ -22,9 +22,8 @@ class GameItem(GameObject, ABC):
     
     def __init__(self, initX: float, initY: float):
         self.surface = Surface((30, 30))
+        self.surface.fill((0,0,0))
         self.surface.set_colorkey((0, 0, 0))
-        
-        self.surface.fill((130, 130, 130))
 
         self.body = Body(body_type=Body.KINEMATIC)
         self.body.position = (initX, initY)
