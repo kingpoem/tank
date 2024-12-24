@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 import math
 from random import randint
 import random
-from typing import Sequence
+from typing import Any, Callable, Sequence
 from loguru import logger
-from pygame import K_DOWN, K_ESCAPE, KEYDOWN, QUIT, Rect, Surface
+from pygame import K_DOWN, K_ESCAPE, KEYDOWN, KEYUP, QUIT, Rect, Surface
 import pygame
 from pygame import transform
 from pygame.event import Event
@@ -12,13 +12,28 @@ from pygame.freetype import Font
 from pymunk import Space
 
 # from game.gameLoop import GameLoop
+from game import tank
 from game.controls.floatMenu import FloatMenu
 from game.controls.selectionControl import Selection, SelectionControl
-from game.defines import BACKGROUND, FONT_COLOR, MEDIAN_FONT, SELECTION_HEIGHT
+from game.defines import (
+    BACKGROUND,
+    FONT_COLOR,
+    GENERATE_GAME_ITEM_EVENT_TYPE,
+    MEDIAN_FONT,
+    ONLINE_KEYDOWN_EVENT_TYPE,
+    ONLINE_KEYUP_EVENT_TYPE,
+    SELECTION_HEIGHT,
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH,
+)
+from game.events.eventDelegate import EventDelegate
+from game.events.globalEvents import GlobalEvents
+from game.gameObject import GameObject, GameObjectData, GameObjectFactory
+from game.keyPressedManager import ONLINE
 from game.operateable import Operateable, Operation
 from game.sceneManager import SCENE_TYPE, SceneManager
-from game.spaces.gameObjectSpace import GameObjectSpace
-from game.eventManager import EventManager
+from game.spaces.gameObjectSpace import GAMEOBJECT_SPACE_TYPE, GameObjectSpace
+from game.events.eventManager import EventManager
 from game.gameItemManager import GameItemManager
 from game.gameMap import (
     MAP_MAX_HEIGHT,
@@ -30,22 +45,22 @@ from game.gameMap import (
     PLOT_HEIGHT,
     PLOT_WIDTH,
     GameMap,
+    GameMapData,
 )
 from game.scenes.scene import Scene
-from game.tank import TANK_REMOVED_EVENT_TYPE, Tank
+from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_STYLE, Tank, TankData
+from game.weapons.weaponFactory import WEAPON_TYPE
+from online.onlineData import GameUpdateData
+from online.onlineManager import OnlineManager
 
 
 SCORE_UI_HEIGHT = 192
-GAME_OVER_EVENT_TYPE: int = EventManager.allocateEventType()
-START_NEW_TURN_EVENT_TYPE: int = EventManager.allocateEventType()
-GAME_MAP_UI_MAX_WIDTH = MAP_MAX_WIDTH * PLOT_WIDTH + MARGIN_X * 2
-GAME_MAP_UI_MAX_HEIGHT = MAP_MAX_HEIGHT * PLOT_HEIGHT + MARGIN_Y * 2
 
 
-class GameScene(Scene, ABC):
+class GameScene(Scene):
 
     __gameObjectSpace: GameObjectSpace
-    __gameItemManager: GameItemManager
+    __gameItemManager: GameItemManager | None = None
 
     __gameMap: GameMap
 
@@ -53,13 +68,18 @@ class GameScene(Scene, ABC):
     __greenScore: int = 0
 
     __ui: Surface
-    __gameMapUI: Surface
+    __gameUI: Surface
     __scoreUI: Surface
     __gameMenu: FloatMenu
 
     __redTank: Tank
     __greenTank: Tank
+    __isLoaded: bool = False
     __isGameOver: bool = False
+    __isScoreChanged: bool = True
+
+    GameOvered: EventDelegate[None]
+    GameLoaded: EventDelegate[None]
 
     @property
     def ui(self):
@@ -97,24 +117,23 @@ class GameScene(Scene, ABC):
     def gameItemManager(self):
         return self.__gameItemManager
 
-    def __init__(self, gameObjectSpace: GameObjectSpace):
-        self.__gameObjectSpace = gameObjectSpace
-        self.__gameMap = self.generateMap()
-        self.__redTank, self.__greenTank = self.generateTanks()
-        self.__gameItemManager = GameItemManager(self.__gameMap)
-        self.__gameMapUI = pygame.Surface(
+    def __init__(self):
+        logger.info("游戏场景初始化")
+
+        self.GameLoaded = EventDelegate[None]("游戏加载完毕")
+        self.GameOvered = EventDelegate[None]("本轮游戏结束")
+
+        self.__gameObjectSpace = GameObjectSpace()
+        self.registerEvents()
+
+        self.__gameUI = pygame.Surface(
             (
-                self.__gameMap.width * PLOT_WIDTH + MARGIN_X * 2,
-                self.__gameMap.height * PLOT_HEIGHT + MARGIN_Y * 2,
+                WINDOW_WIDTH,
+                WINDOW_HEIGHT - SCORE_UI_HEIGHT,
             )
         )
-        self.__scoreUI = pygame.Surface((GAME_MAP_UI_MAX_WIDTH, SCORE_UI_HEIGHT))
-        self.__ui = pygame.Surface(
-            (
-                GAME_MAP_UI_MAX_WIDTH,
-                GAME_MAP_UI_MAX_HEIGHT + self.__scoreUI.get_height(),
-            )
-        )
+        self.__scoreUI = pygame.Surface((WINDOW_WIDTH, SCORE_UI_HEIGHT))
+        self.__ui = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.__gameMenu = FloatMenu(
             self.__ui,
             1080,
@@ -136,68 +155,154 @@ class GameScene(Scene, ABC):
                 ],
             ),
         )
-        # 决定渲染顺序
-        self.__gameObjectSpace.registerObject(self.__gameMap)
-        self.__gameObjectSpace.registerObject(self.__redTank)
-        self.__gameObjectSpace.registerObject(self.__greenTank)
+        gameMapData = self.generateMapData()
+        GlobalEvents.GameObjectAdding("GameMap", gameMapData)
 
-        logger.debug("游戏场景初始化完成")
+    def registerEvents(self):
+        self.GameOvered += self.__onGameOvered
+        self.GameLoaded += self.__onGameLoaded
+        GlobalEvents.GameObjectAdding += self.__onGameObjectAdding
+        GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
+        GlobalEvents.GameObjectRemoving += self.__onGameObjectRemoving
+        GlobalEvents.GameObjectsClearing += self.__onGameObjectClearing
+        # EventManager.addHandler(GAME_OBJECT_ADD_EVENT_TYPE,self.__onGameObjectAdded)
+        # EventManager.addHandler(GAME_OBJECT_REMOVE_EVENT_TYPE,self.__onGameObjectRemoved)
+        # EventManager.addHandler(GAME_OBJECT_CLEAR_EVENT_TYPE,self.__onClearGameObject)
 
-    @abstractmethod
+    def unregisterEvents(self):
+        self.GameOvered.clear()
+        self.GameLoaded.clear()
+        GlobalEvents.GameObjectAdding.clear()
+        GlobalEvents.GameObjectAdded.clear()
+        GlobalEvents.GameObjectRemoving.clear()
+        GlobalEvents.GameObjectsClearing.clear()
+        # EventManager.removeHandler(GAME_OBJECT_ADD_EVENT_TYPE)
+        # EventManager.removeHandler(GAME_OBJECT_REMOVE_EVENT_TYPE)
+        # EventManager.removeHandler(GAME_OBJECT_CLEAR_EVENT_TYPE)
+
+    def __gameMapAdded(self):
+        if self.__gameItemManager is not None:
+            self.__gameItemManager.reset(self.__gameMap)
+        else:
+            self.__gameItemManager = GameItemManager(self.__gameMap, self.__gameObjectSpace)
+        if self.gameObjectSpace is not None:
+            self.gameObjectSpace.spaceRegion = Rect(
+                0, 0, self.__gameMap.surface.get_width(), self.__gameMap.surface.get_height()
+            )
+        # 随后加载坦克
+        tankDatas = self.generateTankDatas()
+        if OnlineManager.isConnected() and OnlineManager.isServer():
+            tankDatas[1].operation = Operation(
+                pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g, ONLINE
+            )
+        GlobalEvents.GameObjectAdding("RedTank", tankDatas[0])
+        GlobalEvents.GameObjectAdding("GreenTank", tankDatas[1])
+
+
+    def __onGameObjectAdding(self, key: str, data: GameObjectData):
+        self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
+
+    def __onGameObjectAdded(self, obj: GameObject):
+        if isinstance(obj, Tank):
+            if obj.key == "RedTank":
+                self.__redTank = obj
+                self.__redTank.Removed += self.__onTankRemoved
+            elif obj.key == "GreenTank":
+                self.__greenTank = obj
+                self.__greenTank.Removed += self.__onTankRemoved
+                self.GameLoaded(None)
+
+        elif isinstance(obj, GameMap):
+            self.__gameMap = obj
+            self.__gameMapAdded()
+
+    def __onGameObjectRemoving(self, key: str):
+        if key in self.__gameObjectSpace.objects:
+            self.__gameObjectSpace.removeObject(key)
+        else:
+            logger.warning(f"对象{key}不存在 删除操作无效")
+
+    def __onGameObjectClearing(self, _: None):
+        self.__gameObjectSpace.clearObjects()
+
     def startNewTurn(self) -> bool:
         """
         开始新一轮游戏
         返回值False则代表开始最后一轮，之后不在重新开始
         """
-        ...
+        GlobalEvents.GameObjectsClearing(None)
+        gameMapData = self.generateMapData()
 
-    @abstractmethod
-    def generateMap(self) -> GameMap: ...
+        # 决定渲染顺序
+        GlobalEvents.GameObjectAdding("GameMap", gameMapData)
 
-    @abstractmethod
-    def generateTanks(self) -> Sequence[Tank]: ...
-
-    def isGameMenuPauseGame(self) -> bool:
         return True
+
+    def generateMapData(self) -> GameMapData:
+        # 地图初始化
+        width = randint(MAP_MIN_WIDTH // 2, MAP_MAX_WIDTH // 2) * 2 + 1
+        height = randint(MAP_MIN_HEIGHT // 2, MAP_MAX_HEIGHT // 2) * 2 + 1
+        return GameMapData(width, height)
+
+    def generateTankDatas(self) -> Sequence[TankData]:
+        # 坦克初始化
+
+        return (
+            TankData(
+                self.gameMap.getPlotPos(1, 1)[0] + random.uniform(-5, 5),
+                self.gameMap.getPlotPos(1, 1)[1] + random.uniform(-5, 5),
+                random.uniform(0, math.pi),
+                TANK_STYLE.RED,
+                Operation(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g),
+                WEAPON_TYPE.FRAGMENTBOMB_WEAPON,
+            ),
+            TankData(
+                self.gameMap.getPlotPos(self.gameMap.width - 2, self.gameMap.height - 2)[0]
+                + random.uniform(-5, 5),
+                self.gameMap.getPlotPos(self.gameMap.width - 2, self.gameMap.height - 2)[1]
+                + random.uniform(-5, 5),
+                random.uniform(0, math.pi),
+                TANK_STYLE.GREEN,
+                Operation(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0),
+                WEAPON_TYPE.COMMON_WEAPON,
+            ),
+        )
 
     def process(self, event: Event):
         if self.__gameMenu.isMenuShow:
             self.__gameMenu.process(event)
-            if self.isGameMenuPauseGame() or self.__gameMenu.isMenuShow is False:
+            if self.__gameMenu.isMenuShow is False:
                 return
 
-        if event.type == GAME_OVER_EVENT_TYPE:
-            self.onGameOvered()
-            # TODO 最终结束画面
-        elif event.type == START_NEW_TURN_EVENT_TYPE:
-            self.__isGameOver = False
-        elif event.type == TANK_REMOVED_EVENT_TYPE:
-            self.onTankRemoved(event.dict["tank"])
-        elif event.type == KEYDOWN:
+        if event.type == KEYDOWN:
             if event.key == K_ESCAPE:
                 if self.__gameMenu.isMenuShow is False:
                     self.__gameMenu.show()
 
     def update(self, delta: float):
-        # if self.__isGameOver is False and (
-        #     self.__gameObjectSpace.containObject(self.__redTank) is False
-        #     or self.__gameObjectSpace.containObject(self.__greenTank) is False
-        # ):
-        #     self.__isGameOver = True
-        #     EventManager.setTimer(GAME_OVER_EVENT_TYPE, 3000, 1)
-
-        if self.__gameMenu.isMenuShow is False or not self.isGameMenuPauseGame():
+        if self.__gameMenu.isMenuShow is False:
             self.__gameObjectSpace.updateObjects(delta)
+            self.__trySendSceneData()
+
         # 更新画面
         self.updateGameMap(delta)
+        self.__ui.blit(
+            self.__gameUI,
+            (0, 0),
+        )
         self.updateScoreBoard(delta)
+        self.__ui.blit(self.__scoreUI, (0, WINDOW_HEIGHT - self.__scoreUI.get_height()))
         self.updateGameMenu(delta)
 
     def updateGameMap(self, delta: float):
-        self.__gameMapUI.fill(BACKGROUND)
-        self.__gameObjectSpace.renderObjects(self.__gameMapUI)
+        if self.__isLoaded is False:
+            return
+        self.__gameUI.fill(BACKGROUND)
+        self.__gameObjectSpace.renderObjects(self.__gameUI)
 
     def updateScoreBoard(self, delta: float):
+        if self.__isLoaded is False or self.__isScoreChanged is False:
+            return
         self.__scoreUI.fill(BACKGROUND)
         self.__scoreUI.blit(
             self.__redTank.surface,
@@ -235,27 +340,14 @@ class GameScene(Scene, ABC):
                 PLOT_HEIGHT / 2 - scoreRect2.height / 2,
             ),
         )
-        self.__ui.fill(BACKGROUND)
-        scale_map = transform.smoothscale_by(
-            self.__gameMapUI,
-            min(
-                GAME_MAP_UI_MAX_WIDTH / self.__gameMapUI.get_width(),
-                GAME_MAP_UI_MAX_HEIGHT / self.__gameMapUI.get_height(),
-            ),
-        )
-        self.__ui.blit(
-            scale_map,
-            scale_map.get_rect(center=(GAME_MAP_UI_MAX_WIDTH / 2,GAME_MAP_UI_MAX_HEIGHT / 2)),
-        )
-        self.__ui.blit(self.__scoreUI, (0, GAME_MAP_UI_MAX_HEIGHT))
+        self.__isScoreChanged = False
 
     def updateGameMenu(self, delta: float):
         self.__gameMenu.update(delta)
-        if self.isGameMenuPauseGame():
-            if self.__gameMenu.isMenuShow and not EventManager.isTimerPaused():
-                EventManager.pauseTimer()
-            elif not self.__gameMenu.isMenuShow and EventManager.isTimerPaused():
-                EventManager.resumeTimer()
+        if self.__gameMenu.isMenuShow and not EventManager.isTimerPaused():
+            EventManager.pauseTimer()
+        elif not self.__gameMenu.isMenuShow and EventManager.isTimerPaused():
+            EventManager.resumeTimer()
 
     def onEntered(self):
         # EventManager.addHandler(TANK_REMOVED_EVENT_TYPE, self.onTankRemoved)
@@ -263,24 +355,48 @@ class GameScene(Scene, ABC):
 
     def onLeaved(self):
         # EventManager.removeHandler(TANK_REMOVED_EVENT_TYPE, self.onTankRemoved)
-        ...
+        self.unregisterEvents()
+        self.gameObjectSpace.clearObjects()
+        if self.gameItemManager is not None:
+            self.gameItemManager.cancelGenerate()
 
-    def onGameOvered(self):
-        if self.gameObjectSpace.containObject(self.redTank):
+
+    def __trySendSceneData(self):
+        if OnlineManager.isConnected() and OnlineManager.isServer():
+            datas = dict[str, GameObjectData]()
+            for key in self.gameObjectSpace.objects:
+                # 排除地图更新数据
+                # 因为地图不每时每刻更新
+                if key == "GameMap":
+                    continue
+                if key.startswith("GameItem_"):
+                    continue
+                datas[key] = self.gameObjectSpace.objects[key].getData()
+            OnlineManager.sendData(GameUpdateData(datas))
+
+    def __onGameOvered(self, _: None):
+        if self.redTank.isExist:
             self.__redScore += 1
-        if self.gameObjectSpace.containObject(self.greenTank):
+        if self.greenTank.isExist:
             self.__greenScore += 1
-        if self.startNewTurn():
-            self.__gameMapUI = pygame.Surface(
-                (
-                    self.__gameMap.width * PLOT_WIDTH + MARGIN_X * 2,
-                    self.__gameMap.height * PLOT_HEIGHT + MARGIN_Y * 2,
-                )
-            )
-            EventManager.raiseEventType(START_NEW_TURN_EVENT_TYPE)
 
-    def onTankRemoved(self, tank: Tank):
+        self.__isScoreChanged = True
+
+        # 仅发送数据给客户端
+        if OnlineManager.isConnected() and OnlineManager.isServer():
+            GlobalEvents.GameScoreUpdated(self.__redScore, self.__greenScore)
+
+        if self.startNewTurn():
+            ...
+
+    def __onGameLoaded(self, _: None):
+        self.__isGameOver = False
+        self.__isLoaded = True
+        if self.gameItemManager is not None:
+            self.gameItemManager.startGenerate()
+
+    def __onTankRemoved(self, obj: GameObject):
         if self.__isGameOver:
             return
         self.__isGameOver = True
-        EventManager.setTimer(GAME_OVER_EVENT_TYPE, 3000, 1)
+        self.GameOvered.setTimer(3000, 1, None)

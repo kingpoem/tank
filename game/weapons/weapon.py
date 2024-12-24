@@ -14,32 +14,43 @@ class Weapon(ABC):
 
     def __init__(self, owner: GameObject):
         self.owner = owner
-        pass
+        ...
 
-
-    def render(self,screen : Surface):
+    def render(self, screen: Surface):
         """
         在武器可以使用的时候，武器进行附加渲染
         """
-        pass
+        ...
 
     @abstractmethod
     def fire(self):
         """
         开火方法
         """
-        pass
+        ...
 
     @abstractmethod
     def canFire(self) -> bool:
         """
         判断是否可以开火
         """
-        pass
+        ...
 
     @abstractmethod
     def canUse(self) -> bool:
         """
         判断武器是否可以使用
         """
-        pass
+        ...
+
+    def onPicked(self):
+        """
+        当装备武器时调用
+        """
+        ...
+
+    def onDropped(self):
+        """
+        当丢掉武器时调用
+        """
+        ...

@@ -19,14 +19,14 @@ class KeyPressedManager:
         from game.defines import ONLINE_KEYDOWN_EVENT_TYPE, ONLINE_KEYUP_EVENT_TYPE
 
         if event.type == KEYDOWN:
-            KeyPressedManager.__keyPressed[0].add(event.key)
+            KeyPressedManager.__keyPressed[LOCAL].add(event.key)
         elif event.type == KEYUP:
-            KeyPressedManager.__keyPressed[0].discard(event.key)
+            KeyPressedManager.__keyPressed[LOCAL].discard(event.key)
 
         if event.type == ONLINE_KEYDOWN_EVENT_TYPE:
-            KeyPressedManager.__keyPressed[1].add(event.key)
+            KeyPressedManager.__keyPressed[ONLINE].add(event.key)
         elif event.type == ONLINE_KEYUP_EVENT_TYPE:
-            KeyPressedManager.__keyPressed[1].discard(event.key)
+            KeyPressedManager.__keyPressed[ONLINE].discard(event.key)
 
     @staticmethod
     def isPressed(key: int,type : int = LOCAL):

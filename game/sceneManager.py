@@ -3,14 +3,13 @@ from typing import Any
 
 from loguru import logger
 
-from game.scenes.scene import Scene
+from .scenes.scene import Scene
 
 
 class SCENE_TYPE(Enum):
     START_SCENE = 0
     GAME_SCENE = 1
     CLIENT_GAME_SCENE = 2
-    SERVER_GAME_SCENE = 3
 
 
 class SceneManager:
@@ -36,7 +35,7 @@ class SceneManager:
 
     @staticmethod
     def changeScene(sceneType: SCENE_TYPE, delOtherScene: bool = True, *args: Any, **kwargs: Any):
-        
+
         if sceneType not in SceneManager.__sceneList:
             SceneManager.__sceneList[sceneType] = SceneManager.__sceneTypeToScene(
                 sceneType, *args, **kwargs
@@ -44,7 +43,7 @@ class SceneManager:
             SceneManager.__sceneList[sceneType].onEntered()
             logger.debug(f"场景进入 {sceneType}")
         if delOtherScene:
-            other_scene = [cs for cs in SceneManager.__sceneList if not cs == sceneType]
+            other_scene = [cs for cs in SceneManager.__sceneList if cs != sceneType]
             for scene in other_scene:
                 SceneManager.__sceneList[scene].onLeaved()
                 SceneManager.__sceneList.pop(scene)
@@ -53,15 +52,9 @@ class SceneManager:
 
     @staticmethod
     def __sceneTypeToScene(sceneType: SCENE_TYPE, *args: Any, **kwargs: Any):
-        from game.scenes.startScene import StartScene
-        from game.scenes.localGameScene import LocalGameScene
-        from game.scenes.clientGameScene import ClientGameScene
-        from game.scenes.serverGameScene import ServerGameScene
+        from .scenes.startScene import StartScene
+        from .scenes.gameScene import GameScene
+        from .scenes.clientGameScene import ClientGameScene
 
-        SCENE_LIST: list[type[Scene]] = [
-            StartScene,
-            LocalGameScene,
-            ClientGameScene,
-            ServerGameScene,
-        ]
+        SCENE_LIST: list[type[Scene]] = [StartScene, GameScene, ClientGameScene]
         return SCENE_LIST[sceneType.value](*args, **kwargs)

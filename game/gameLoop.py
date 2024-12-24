@@ -5,7 +5,7 @@ import pygame
 from pygame import Surface, transform
 
 
-from .eventManager import EventManager
+from .events.eventManager import EventManager
 from .keyPressedManager import KeyPressedManager
 from .sceneManager import SceneManager
 
@@ -42,6 +42,7 @@ class GameLoop:
 
         # 初始化 pygame
         pygame.init()
+        pygame.mixer.init()
 
         # 初始化游戏屏幕
         GameLoop.screen = pygame.display.set_mode((1280, 960), pygame.RESIZABLE)
@@ -72,7 +73,7 @@ class GameLoop:
 
         # 初始化游戏时钟
         clock = pygame.time.Clock()
-        pygame.time.set_timer(pygame.USEREVENT, 1000)
+        # pygame.time.set_timer(pygame.USEREVENT, 1000)
         preTicks = 0
         from game.defines import BACKGROUND, FONT_COLOR, MEDIAN_FONT, SMALL_FONT
 
@@ -114,7 +115,6 @@ class GameLoop:
                 GameLoop.screen, (0, 24), f"delta: {GameLoop.delta * 1000:.1f}ms", FONT_COLOR
             )
             pygame.display.flip()
-
             clock.tick(FPS)
 
         pygame.quit()

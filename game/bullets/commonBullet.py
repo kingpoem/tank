@@ -1,32 +1,52 @@
-from pygame import Surface, draw
+from pygame import Surface, draw,mixer
 from pygame.event import Event
 from pymunk import Body, Circle, Shape, Space, Vec2d
 
-from game.eventManager import EventManager
-from game.gameObject import GameObject
+from game.events.eventDelegate import EventDelegate
+from game.events.eventManager import EventManager
+from game.events.globalEvents import GlobalEvents
+from game.gameObject import GameObject, GameObjectData
 from game.gameSettings import GlobalSettingsManager
 
 
 BULLET_COLLISION_TYPE = 2
 
 
+class CommonBulletData(GameObjectData):
+    def __init__(self, x: float, y: float, angle: float):
+        self.x = x
+        self.y = y
+        self.angle = angle
+
+
 class CommonBullet(GameObject):
     """
     常规子弹
     """
+    BULLET_DISAPPEAR_TIME_MS = 8_000
 
-    def __init__(self, initX: float, initY: float, initAngle: float):
+    BulletDisappeared: EventDelegate[GameObject]
+
+    def __init__(self, key: str, data: CommonBulletData):
+        super().__init__(key, data)
+
+        def __onButtonDisappeared(obj : GameObject):
+            if self.isExist:
+                self.__disappearSound.play()
+            GlobalEvents.GameObjectRemoving(self.key)
+
+        self.BulletDisappeared = EventDelegate[GameObject](f"{key} 普通子弹 超时消失")
+        self.BulletDisappeared.setTimer(CommonBullet.BULLET_DISAPPEAR_TIME_MS, 1, self)
+        self.BulletDisappeared += __onButtonDisappeared
+
+
         def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             body.update_velocity(body, (0, 0), 1, dt)
-            # body.velocity = body.rotation_vector * 300
-            # vec: Vec2d = body.velocity
-            # if vec.length < GlobalSettingsManager.getGameSettings().commonBulletSpeed - 10:
-            #     body.velocity = body.rotation_vector * GlobalSettingsManager.getGameSettings().commonBulletSpeed
-            pass
+            
 
         self.body = Body(body_type=Body.DYNAMIC)
-        self.body.position = (initX, initY)
-        self.body.angle = initAngle
+        self.body.position = (data.x, data.y)
+        self.body.angle = data.angle
         self.body.moment = float("inf")
         self.body.mass = 1
 
@@ -46,17 +66,28 @@ class CommonBullet(GameObject):
         # self.shapes[0].sensor = True
 
         # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-        event = EventManager.allocateEventType()
+        tempEvent = EventDelegate[None](f"{key} 普通子弹 延迟设置碰撞")
 
-        def __delayEnableCollisionEventHandler():
+        def __delayEnableCollisionEventHandler(_: None):
             # 重新设置参与碰撞检测
             # self.shapes[0].sensor = False
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-            EventManager.cancelTimer(event)
 
-        EventManager.addHandler(event, lambda e: __delayEnableCollisionEventHandler())
-        EventManager.setTimer(event, 100)
+        tempEvent += __delayEnableCollisionEventHandler
+        tempEvent.setTimer(50, 1, None)
+
+        # 音效
+        self.__disappearSound = mixer.Sound("assets/disappear.mp3")
+        self.__disappearSound.set_volume(0.1)
 
     def render(self, screen: Surface):
         if self.body.space:
             draw.circle(screen, (0, 0, 0), self.body.position, 4)
+
+    def getData(self) -> GameObjectData:
+        return CommonBulletData(self.body.position[0], self.body.position[1], self.body.angle)
+
+    def setData(self, data: GameObjectData):
+        assert isinstance(data, CommonBulletData)
+        self.body.position = (data.x, data.y)
+        self.body.angle = data.angle

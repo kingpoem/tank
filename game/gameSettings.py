@@ -5,7 +5,7 @@ from abc import abstractmethod
 
 class GameSettings:
 
-    __tankSpeed : float = 700
+    __tankSpeed : float = 200
     __commonBulletSpeed : float = 200
     __ghostBulletSpeed : float = 200
     __ghostSpeedIncreaseRate : float = 0.01

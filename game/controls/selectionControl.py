@@ -78,7 +78,7 @@ class SelectionControl(Control):
 
     __selectionControlUI: Surface
 
-    __selections: list[Selection] = []
+    __selections: list[Selection]
     __selectIndex: int = 0
     __selectionScale: list[float]
 

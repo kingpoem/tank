@@ -1,7 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import Callable
+from typing import Callable, TypeVar, final
 from pygame import Surface
 from pymunk import Body, Shape, Space
+
+from game.events.delegate import Delegate
+
+
+
+
+
+class GameObjectData(ABC): ...
 
 
 class GameObject(ABC):
@@ -24,15 +32,52 @@ class GameObject(ABC):
     物理世界复合形状
     """
 
-    Removed : Callable[[],None] | None = None
-    """
-    当前物体被移除时调用
-    """
 
-    def __init__(self, surface: Surface, body: Body, shapes: list[Shape]):
-        self.surface = surface
-        self.body = body
-        self.shapes = shapes
+    @property
+    def key(self) -> str:
+        """
+        游戏对象的唯一标识符
+
+        并且需要在不同电脑上保持一致
+        """
+        return self.__key
+    
+
+    @final
+    @property
+    def isExist(self):
+        """判断物体是否处在游戏空间中"""
+
+        if self.CurrentSpace is not None:
+            return self.CurrentSpace.containObject(self)
+        else:
+            return False
+    @final
+    @property
+    def CurrentSpace(self):
+        """获取当前物体所处在的游戏空间 如果不存在返回None"""
+        from .sceneManager import SceneManager
+        from .scenes.gameScene import GameScene
+
+        curScene = SceneManager.getCurrentScene()
+        if isinstance(curScene, GameScene):
+            return curScene.gameObjectSpace
+        else:
+            return None
+
+    @abstractmethod
+    def __init__(self, key: str, data: GameObjectData):
+        """从游戏对象数据进行初始化"""
+
+        self.__key = key
+        """游戏对象的唯一标识符"""
+
+        self.Entered = Delegate[GameObject](f"{key} 进入游戏空间")
+        """当物体进入游戏空间时触发"""
+
+        self.Removed = Delegate[GameObject](f"{key} 被移除游戏空间")
+        """当物体被移除游戏空间时触发"""
+
 
     @abstractmethod
     def render(self, screen: Surface):
@@ -41,21 +86,84 @@ class GameObject(ABC):
         """
         pass
 
+    def update(self,delta : float):
+        """
+        每帧调用更新函数
+        """
+        ...
+
     def setBody(self, space: Space):
         """
         设置物理世界物体
         """
         space.add(self.body, *self.shapes)
 
-    def removeBody(self,space : Space):
+    def removeBody(self, space: Space):
         """
         移除物理世界物体
         """
-        space.remove(self.body,*self.shapes)
+        space.remove(self.body, *self.shapes)
 
-
-    def onEntered(self):
+    def onEntered(self): 
+        self.Entered(self)
         ...
 
-    def onRemoved(self):
+    def onRemoved(self): 
+        self.Removed(self)
         ...
+
+    @abstractmethod
+    def getData(self) -> GameObjectData:
+        """从当前游戏对象获取游戏对象数据"""
+        ...
+
+    
+    def setData(self, data: GameObjectData):
+        """从游戏对象数据设置更改当前游戏对象"""
+        raise NotImplementedError("游戏对象不支持重新设置数据")
+
+
+
+@final
+class GameObjectFactory(ABC):
+    """
+    游戏对象工厂
+    根据游戏对象数据生成游戏对象实例
+    """
+
+    @staticmethod
+    def create(key: str, data: GameObjectData) -> GameObject:
+        from .gameMap import GameMapData, GameMap
+        from .tank import TankData, Tank
+        from .bullets.commonBullet import CommonBulletData, CommonBullet
+        from .bullets.fragmentBomb import FragmentBombData, FragmentBomb
+        from .bullets.ghostBullet import GhostBulletData, GhostBullet
+        from .bullets.missile import MissileData, Missile
+        from .gameItems.fragmentWeaponGameItem import (
+            FragmentWeaponGameItemData,
+            FragmentWeaponGameItem,
+        )
+        from .gameItems.ghostWeaponGameItem import GhostWeaponGameItemData, GhostWeaponGameItem
+        from .gameItems.remoteControlMissileGameItem import (
+            RemoteControlMissileGameItemData,
+            RemoteControlMissileGameItem,
+        )
+        from .effects.fragmentBombEffect import FragmentBombEffectData,FragmentBombEffect
+
+        recipe: dict[type[GameObjectData], type[GameObject]] = {
+            GameMapData: GameMap,
+            TankData: Tank,
+            CommonBulletData: CommonBullet,
+            FragmentBombData: FragmentBomb,
+            GhostBulletData: GhostBullet,
+            MissileData: Missile,
+            FragmentWeaponGameItemData: FragmentWeaponGameItem,
+            GhostWeaponGameItemData: GhostWeaponGameItem,
+            RemoteControlMissileGameItemData: RemoteControlMissileGameItem,
+            FragmentBombEffectData : FragmentBombEffect
+        }
+
+        if type(data) in recipe:
+            return recipe[type(data)](key, data)
+        else:
+            raise TypeError(f"无法创建游戏对象 {key,type(data)}")

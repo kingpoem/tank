@@ -1,74 +1,84 @@
-from typing import Callable
+from typing import Callable, final
 
 from loguru import logger
 from pygame.event import Event
-from .eventManager import EventManager
-from .gameItems.fragmentWeaponGameItem import FragmentWeaponGameItem
-from .gameItems.remoteControlMissileGameItem import RemoteControlMissileGameItem
+
+from game.events.eventDelegate import EventDelegate
+from online.onlineManager import OnlineManager
+
+from .events.globalEvents import GlobalEvents
+from .gameObject import GameObject, GameObjectData, GameObjectFactory
+from .spaces.gameObjectSpace import GameObjectSpace
+from .events.eventManager import EventManager
+from .gameItems.fragmentWeaponGameItem import FragmentWeaponGameItem, FragmentWeaponGameItemData
+from .gameItems.remoteControlMissileGameItem import (
+    RemoteControlMissileGameItem,
+    RemoteControlMissileGameItemData,
+)
 from .gameItems.gameItem import GAMEITEM_COLLISION_TYPE, GameItem
-from .gameItems.ghostWeaponGameItem import GhostWeaponGameItem
-from .gameMap import GameMap
+from .gameItems.ghostWeaponGameItem import GhostWeaponGameItem, GhostWeaponGameItemData
+from .gameMap import MAP_PLOT_TYPE, GameMap
 import random
 
-from .defines import GAME_ITEM_APPEAR_EVENT_TYPE, GENERATE_GAME_ITEM_EVENT_TYPE
+
 from .sceneManager import SceneManager
-
-from structs.map import MAP_PLOT_TYPE
-
 
 
 class GameItemManager:
 
-    GAME_ITEMS_LIST: list[type[GameItem]] = [
-        GhostWeaponGameItem,
-        RemoteControlMissileGameItem,
-        FragmentWeaponGameItem,
-    ]
+    @property
+    def gameMap(self):
+        return self.__gameMap
 
-    GAME_ITEM_APPEAR_TIME = 15
+    @property
+    def gameItems(self):
+        return self.__gameItems
 
-    __gameMap: GameMap
-    __gameItems: list[GameItem]
-
-    def __init__(self, gameMap: GameMap):
+    def __init__(self, gameMap: GameMap, gameObjectSpace: GameObjectSpace):
         self.__gameMap = gameMap
-        self.__gameItems = []
+        self.__gameObjectSpace = gameObjectSpace
+        self.__gameItems: list[GameItem] = []
+        self.__gameItemCount: int = 0
+        self.__isStarted : bool = False
 
-        EventManager.addHandler(
-            GAME_ITEM_APPEAR_EVENT_TYPE,
-            self.__addGameItem,
-        )
-        EventManager.addHandler(
-            GENERATE_GAME_ITEM_EVENT_TYPE, lambda e: self.__generateRandomItem()
-        )
+        self.GameItemGenerated = EventDelegate[GameObjectData](f"游戏物品生成")
+        self.GameItemGenerated += self.__onGameItemGenerated
 
-        EventManager.setTimer(
-            GENERATE_GAME_ITEM_EVENT_TYPE, GameItemManager.GAME_ITEM_APPEAR_TIME * 1000, 1
-        )
-
-    def __addGameItem(self, event: Event):
-        from game.scenes.gameScene import GameScene
-
-        item: GameItem = (event.dict["itemType"])(
-            event.dict["itemPos"][0], event.dict["itemPos"][1]
-        )
-        item.body.angle = event.dict["itemAngle"]
-        item.Removed = lambda: self.__gameItems.remove(item)
-        self.__gameItems.append(item)
-        if isinstance((gameScene := SceneManager.getCurrentScene()), GameScene):
-            gameScene.gameObjectSpace.registerObject(item)
-        else:
+    def startGenerate(self):
+        if self.__isStarted:
             return
-        logger.debug(f"生成道具 {type(item)}")
+        self.__isStarted = True
+        GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
+        self.GameItemGenerated.setTimer(10000, 1, self.__generateRandomItemData())
 
-    def __generateRandomItem(self):
+    def cancelGenerate(self):
+        self.__isStarted = False
+        GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
+        self.GameItemGenerated.cancelTimer()
+
+    def __onGameItemGenerated(self, data: GameObjectData):
+        GlobalEvents.GameObjectAdding(f"GameItem_{self.__gameItemCount}", data)
+        self.__gameItemCount += 1
+    
+    def __onGameObjectAdded(self,obj : GameObject):
+        if isinstance(obj, GameItem):
+            if OnlineManager.isConnected() and OnlineManager.isClient():
+                return
+            self.__gameItems.append(obj)
+            obj.Removed += self.__onGameItemRemoved
+            self.GameItemGenerated.setTimer(
+                10000 + len(self.__gameItems) * 5000, 1, self.__generateRandomItemData()
+            )
+
+    def __generateRandomItemData(self) -> GameObjectData:
+        # 生成不会重复，且不在墙面上的物品位置
+        # mapX mapY : 地图上的格子位置
+        # x y : 实际坐标
         mapX, mapY = random.randint(0, self.__gameMap.width - 1), random.randint(
             0, self.__gameMap.height - 1
         )
         x, y = self.__gameMap.getPlotPos(mapX, mapY)
-        samePosFilter: Callable[[GameItem], bool] = (
-            lambda it: it.body.position.x == x and it.body.position.y == y
-        )
+        samePosFilter: Callable[[GameItem], bool] = lambda it: it.mapX == mapX or it.mapY == mapY
         while self.__gameMap.map[mapX, mapY] == MAP_PLOT_TYPE.MAP_BLOCK or any(
             filter(samePosFilter, self.__gameItems)
         ):
@@ -77,32 +87,23 @@ class GameItemManager:
             )
             x, y = self.__gameMap.getPlotPos(mapX, mapY)
 
-        # item.Removed = lambda: self.__gameItems.remove(item)
-        # self.__gameItems.append(item)
-        # self.__gameObjectManager.registerObject(item)
-        # logger.debug(f"生成道具 {type(item)} 在 ({mapX}, {mapY} {self.__gameMap.map[mapX,mapY]})")
-        EventManager.raiseEvent(
-            Event(
-                GAME_ITEM_APPEAR_EVENT_TYPE,
-                {
-                    "itemType": random.choice(GameItemManager.GAME_ITEMS_LIST),
-                    "itemPos": (x + random.uniform(-5, 5), y + random.uniform(-5, 5)),
-                    "itemAngle": random.uniform(-0.5, 0.5),
-                },
-            ),
-        )
-        EventManager.setTimer(
-            GENERATE_GAME_ITEM_EVENT_TYPE,
-            (GameItemManager.GAME_ITEM_APPEAR_TIME + len(self.__gameItems) * 5) * 1000,
-            1,
-        )
+        x += random.uniform(-5, 5)
+        y += random.uniform(-5, 5)
+        logger.debug(f"生成游戏物品位置 {mapX} {mapY} {x} {y}")
+        return random.choice(
+            [
+                FragmentWeaponGameItemData,
+                GhostWeaponGameItemData,
+                RemoteControlMissileGameItemData,
+            ]
+        )(mapX, mapY, x, y, random.uniform(-0.5, 0.5))
+
+    def __onGameItemRemoved(self, obj: GameObject):
+        assert isinstance(obj, GameItem)
+        if obj in self.__gameItems:
+            self.__gameItems.remove(obj)
 
     def reset(self, gameMap: GameMap):
+        self.cancelGenerate()
+        self.__gameItems.clear()
         self.__gameMap = gameMap
-        self.__gameItems = []
-        EventManager.cancelTimer(GENERATE_GAME_ITEM_EVENT_TYPE)
-        EventManager.setTimer(
-            GENERATE_GAME_ITEM_EVENT_TYPE,
-            GameItemManager.GAME_ITEM_APPEAR_TIME * 1000,
-            1,
-        )

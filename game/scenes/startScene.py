@@ -26,8 +26,8 @@ from pygame import image, transform
 from game.controls.floatMenu import FloatMenu
 from game.controls.selectionControl import Selection, SelectionControl
 from game.controls.textbox import TextBox
-from game.defines import BACKGROUND, FONT_COLOR, LARGE_TITLE_FONT, SELECTION_HEIGHT
-from game.eventManager import EventManager
+from game.defines import BACKGROUND, FONT_COLOR, LARGE_TITLE_FONT, SELECTION_HEIGHT, WINDOW_HEIGHT, WINDOW_WIDTH
+from game.events.eventManager import EventManager
 
 from game.gameSettings import GlobalSettingsManager
 from game.sceneManager import SCENE_TYPE, SceneManager
@@ -43,11 +43,6 @@ class StartScene(Scene):
     __title: Surface
     # __settingMenu: Surface
 
-    __selectIndex: int = 0
-    # __selections: list[tuple[str, Callable[[], None]]]
-    # __selectionScale: list[float]
-
-    # __selections: list[SelectionControl]
     __selectionContorl: SelectionControl
 
     __createServerMenu: FloatMenu
@@ -55,7 +50,6 @@ class StartScene(Scene):
     __settingMenu: FloatMenu
 
     __SELECT_HEIGHT = 72
-    __SELECT_SIGN_HEIGHT = 24
 
     @property
     def ui(self) -> Surface:
@@ -71,7 +65,7 @@ class StartScene(Scene):
             Selection(lambda: "退出游戏", SELECTION_HEIGHT, self.__onExitGameEnter),
         ]
 
-        self.__ui = Surface((1440, 1280))
+        self.__ui = Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
 
         img = image.load("assets/background.png").convert_alpha()
         self.__background = transform.smoothscale_by(
@@ -192,12 +186,11 @@ class StartScene(Scene):
             ),
         )
 
-        hostTextBox = TextBox("host", "localhost")
         portTextBox = TextBox("port", "8900")
 
         def __createServer():
             try:
-                host = hostTextBox.text
+                host = '0.0.0.0'
                 port = int(portTextBox.text)
                 OnlineManager.createServer(host, port)
             except Exception as e:
@@ -213,7 +206,6 @@ class StartScene(Scene):
                 1280,
                 960,
                 [
-                    Selection(hostTextBox, SELECTION_HEIGHT),
                     Selection(portTextBox, SELECTION_HEIGHT),
                     Selection(lambda: "创建服务器", SELECTION_HEIGHT, __createServer),
                 ],
@@ -245,7 +237,7 @@ class StartScene(Scene):
             ),
         )
 
-        logger.debug("主菜单场景初始化完成")
+        logger.success("主菜单场景初始化完成")
 
     def process(self, event: Event):
         if self.__settingMenu.isMenuShow:

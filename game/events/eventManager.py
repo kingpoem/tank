@@ -1,17 +1,21 @@
+from abc import ABC
 from loguru import logger
 from pygame import USEREVENT
 from pygame.event import Event, post
-from typing import Callable
+from typing import Callable, final
+
+from ..gameObject import GameObject, GameObjectData
 
 
-class EventManager:
+@final
+class EventManager(ABC):
 
     class __Timer:
         event: int | Event
-        __initTimeMs : float
+        __initTimeMs: float
         timeMs: float
         loops: int
-        isEndless : bool
+        isEndless: bool
 
         def __init__(self, event: int | Event, timeMs: float, loops: int = 0):
             self.event = event
@@ -19,16 +23,9 @@ class EventManager:
             self.timeMs = timeMs
             self.loops = loops
             self.isEndless = self.loops == 0
-        
+
         def reset(self):
             self.timeMs = self.__initTimeMs
-
-    # class __EventHandler:
-    #     eventType: int
-    #     handlers: list[Callable[[Event], None]]
-    #     def __init__(self, eventType: int, handlers: list[Callable[[Event], None]]):
-    #         self.eventType = eventType
-    #         self.handlers = handlers
 
     __nextEventType: int = USEREVENT + 1
     __isTimerPaused: bool = False
@@ -38,9 +35,6 @@ class EventManager:
     @staticmethod
     def isTimerPaused():
         return EventManager.__isTimerPaused
-
-    def __init__(self):
-        raise NotADirectoryError("EventManager静态类无法实例化")
 
     @staticmethod
     def addHandler(eventType: int, handler: Callable[[Event], None]):
@@ -66,9 +60,7 @@ class EventManager:
         for timer in EventManager.__timers:
             timer.timeMs -= delta * 1000
 
-        acTimer = [
-            t for t in EventManager.__timers if t.timeMs <= 0
-        ]
+        acTimer = [t for t in EventManager.__timers if t.timeMs <= 0]
         for timer in acTimer:
             logger.debug(f"定时器触发{timer.event} ")
             if isinstance(timer.event, int):
@@ -84,17 +76,26 @@ class EventManager:
                 EventManager.__timers.remove(timer)
 
     @staticmethod
-    def setTimer(event: int | Event, millis: int, loops: int = 0):
+    def setTimer(event: int | Event, timeMs: int, loops: int = 0):
         # set_timer(eventType, millis, loops)
-        EventManager.__timers.append(EventManager.__Timer(event, millis, loops))
-        logger.debug(f"设置定时器{event}，间隔{millis}毫秒，循环{loops}次")
+        EventManager.__timers.append(EventManager.__Timer(event, timeMs, loops))
+        logger.trace(f"设置定时器{event}，间隔{timeMs}毫秒，循环{loops}次")
 
     @staticmethod
     def cancelTimer(event: int | Event):
-        for i in range(len(EventManager.__timers)):
-            if EventManager.__timers[i].event == event:
-                EventManager.__timers.pop(i)
-                break
+        timerLen = len(EventManager.__timers)
+        for i in range(timerLen):
+            curEvent = EventManager.__timers[i].event
+            if isinstance(curEvent, int):
+                if curEvent == event:
+                    logger.debug(f"取消定时器 {event}")
+                    EventManager.__timers.pop(i)
+                    break
+            elif isinstance(curEvent, Event):
+                if curEvent.type == event or curEvent == event:
+                    logger.debug(f"取消定时器 {event}")
+                    EventManager.__timers.pop(i)
+                    break
 
     @staticmethod
     def pauseTimer():
@@ -109,7 +110,7 @@ class EventManager:
     @staticmethod
     def raiseEventType(eventType: int):
         EventManager.raiseEvent(Event(eventType))
-        logger.debug(f"触发事件 {eventType}")
+        logger.trace(f"触发事件 {eventType}")
 
     @staticmethod
     def raiseEvent(event: Event):

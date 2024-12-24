@@ -24,3 +24,13 @@ class WeaponFactory:
 
         weaponList: list[type[Weapon]] = [CommonWeapon, GhostWeapon, RemoteControlMissileWeapon,FragmentBombWeapon]
         return weaponList[weaponType.value](owner)
+
+    @staticmethod
+    def getWeaponType(weapon: Weapon) -> WEAPON_TYPE:
+        from game.weapons.commonWeapon import CommonWeapon
+        from game.weapons.ghostWeapon import GhostWeapon
+        from game.weapons.remoteControlMissileWeapon import RemoteControlMissileWeapon
+        from game.weapons.fragmentBombWeapon import FragmentBombWeapon
+
+        weaponList: list[type[Weapon]] = [CommonWeapon, GhostWeapon, RemoteControlMissileWeapon,FragmentBombWeapon]
+        return WEAPON_TYPE(weaponList.index(type(weapon)))

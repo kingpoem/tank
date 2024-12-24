@@ -1,11 +1,10 @@
 from abc import abstractmethod
 
 from pygame import Surface
-from game.contracts.renderable import Renderable
 from pygame.event import Event
 
 
-class Control(Renderable):
+class Control():
 
     @property
     @abstractmethod
@@ -20,5 +19,10 @@ class Control(Renderable):
         更新控件
         """
         ...
-
+    @abstractmethod
+    def render(self, screen: Surface):
+        """
+        渲染控件
+        """
+        ...
 
