@@ -25,6 +25,10 @@ class EventData(OnlineData):
 
 
 class GameUpdateData(OnlineData):
-    def __init__(self, data: dict[str, GameObjectData]):
+    def __init__(self,scores : dict[str,int], data: dict[str, GameObjectData]):
+        self.scores = scores
         self.data = data
 
+class RequestGameObjectData(OnlineData):
+    def __init__(self, keys: Sequence[str]):
+        self.keys = keys

@@ -29,7 +29,6 @@ from game.defines import (
 from game.events.eventDelegate import EventDelegate
 from game.events.globalEvents import GlobalEvents
 from game.gameObject import GameObject, GameObjectData, GameObjectFactory
-from game.keyPressedManager import ONLINE
 from game.operateable import Operateable, Operation
 from game.sceneManager import SCENE_TYPE, SceneManager
 from game.spaces.gameObjectSpace import GAMEOBJECT_SPACE_TYPE, GameObjectSpace
@@ -48,70 +47,33 @@ from game.gameMap import (
     GameMapData,
 )
 from game.scenes.scene import Scene
-from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_STYLE, Tank, TankData
+from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_COLOR, Tank, TankData
 from game.weapons.weaponFactory import WEAPON_TYPE
 from online.onlineData import GameUpdateData
 from online.onlineManager import OnlineManager
 
 SCORE_UI_HEIGHT = 192
 
+# TODO 继续完成
+# FIXME 子弹射到视图外，为留下痕迹
+
+
 class ClientGameScene(Scene):
-    
+
     __gameObjectSpace: GameObjectSpace
-    __gameItemManager: GameItemManager | None = None
-
-    __gameMap: GameMap
-
-    __redScore: int = 0
-    __greenScore: int = 0
 
     __ui: Surface
     __gameUI: Surface
     __scoreUI: Surface
     __gameMenu: FloatMenu
 
-    __redTank: Tank
-    __greenTank: Tank
-    __isLoaded: bool = False
-    __isScoreChanged: bool = True
-
-    GameLoaded: EventDelegate[None]
-
     @property
     def ui(self):
         return self.__ui
 
     @property
-    def gameMap(self):
-        return self.__gameMap
-
-    @gameMap.setter
-    def gameMap(self, value: GameMap):
-        self.__gameMap = value
-
-    @property
-    def redTank(self):
-        return self.__redTank
-
-    @redTank.setter
-    def redTank(self, value: Tank):
-        self.__redTank = value
-
-    @property
-    def greenTank(self):
-        return self.__greenTank
-
-    @greenTank.setter
-    def greenTank(self, value: Tank):
-        self.__greenTank = value
-
-    @property
     def gameObjectSpace(self):
         return self.__gameObjectSpace
-
-    @property
-    def gameItemManager(self):
-        return self.__gameItemManager
 
     def __init__(self):
         logger.info("游戏场景初始化")
@@ -150,16 +112,18 @@ class ClientGameScene(Scene):
                 ],
             ),
         )
+
+        self.__scores = dict[str, int]()
+        # self.__isScoreChanged = False
+
         OnlineManager.GameObjectChanged += self.__onGameObjectChanged
 
     def registerEvents(self):
 
-        self.GameLoaded += self.__onGameLoaded
         GlobalEvents.GameObjectAdding += self.__onGameObjectAdding
-        GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
+        # GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
         GlobalEvents.GameObjectRemoving += self.__onGameObjectRemoving
         GlobalEvents.GameObjectsClearing += self.__onGameObjectClearing
-
         GlobalEvents.GameScoreUpdated += self.__onGameScoreUpdated
         # EventManager.addHandler(GAME_OBJECT_ADD_EVENT_TYPE,self.__onGameObjectAdded)
         # EventManager.addHandler(GAME_OBJECT_REMOVE_EVENT_TYPE,self.__onGameObjectRemoved)
@@ -169,7 +133,7 @@ class ClientGameScene(Scene):
 
         self.GameLoaded.clear()
         GlobalEvents.GameObjectAdding.clear()
-        GlobalEvents.GameObjectAdded.clear()
+        # GlobalEvents.GameObjectAdded.clear()
         GlobalEvents.GameObjectRemoving.clear()
         GlobalEvents.GameObjectsClearing.clear()
 
@@ -178,50 +142,34 @@ class ClientGameScene(Scene):
         # EventManager.removeHandler(GAME_OBJECT_REMOVE_EVENT_TYPE)
         # EventManager.removeHandler(GAME_OBJECT_CLEAR_EVENT_TYPE)
 
-    def __onGameScoreUpdated(self,redScore:int,greenScore:int):
-        if redScore == self.__redScore and greenScore == self.__greenScore:
-            return
-        self.__redScore = redScore
-        self.__greenScore = greenScore
-        self.__isScoreChanged = True
-
-    def __gameMapAdded(self):
-        if self.__gameItemManager is not None:
-            self.__gameItemManager.reset(self.__gameMap)
-        else:
-            if not (OnlineManager.isConnected() and OnlineManager.isClient()):
-                self.__gameItemManager = GameItemManager(self.__gameMap, self.__gameObjectSpace)
-        if self.gameObjectSpace is not None:
-            self.gameObjectSpace.spaceRegion = Rect(
-                0, 0, self.__gameMap.surface.get_width(), self.__gameMap.surface.get_height()
-            )
+    def __onGameScoreUpdated(self, scores: dict[str, int]):
+        self.__scores = scores
+        # logger.debug(f"更新得分 {self.__scores}")
 
     def __onGameObjectChanged(self, key: str, data: GameObjectData):
         if key in self.__gameObjectSpace.objects:
             self.__gameObjectSpace.objects[key].setData(data)
+        else:
+            logger.debug(f"{key} 该游戏对象不存在 重新创建")
+            self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
 
     def __onGameObjectAdding(self, key: str, data: GameObjectData):
         logger.debug(f"{key} adding")
         self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
 
-    def __onGameObjectAdded(self, obj: GameObject):
-        logger.debug(self.__gameObjectSpace.objects)
-        if isinstance(obj, Tank):
-            if obj.key == "RedTank":
-                self.__redTank = obj
-            elif obj.key == "GreenTank":
-                self.__greenTank = obj
-                self.GameLoaded(None)
+    # def __onGameObjectAdded(self, obj: GameObject):
+    #     if isinstance(obj, Tank):
+    #         obj.Removed += self.__onTankRemoved
+    #         self.__tanks.add(obj)
 
-        elif isinstance(obj, GameMap):
-            self.__gameMap = obj
-            self.__gameMapAdded()
+    # def __onTankRemoved(self, obj: GameObject):
+    #     assert isinstance(obj, Tank)
+    #     self.__tanks.discard(obj)
 
     def __onGameObjectRemoving(self, key: str):
         logger.debug(f"{key} removing")
         if key in self.__gameObjectSpace.objects:
             self.__gameObjectSpace.removeObject(key)
-            logger.debug(self.__gameObjectSpace.objects)
         else:
             logger.warning(f"对象{key}不存在 删除操作无效")
 
@@ -247,30 +195,6 @@ class ClientGameScene(Scene):
         height = randint(MAP_MIN_HEIGHT // 2, MAP_MAX_HEIGHT // 2) * 2 + 1
         return GameMapData(width, height)
 
-    def generateTankDatas(self) -> Sequence[TankData]:
-        # 坦克初始化
-
-        return (
-            TankData(
-                self.gameMap.getPlotPos(1, 1)[0] + random.uniform(-5, 5),
-                self.gameMap.getPlotPos(1, 1)[1] + random.uniform(-5, 5),
-                random.uniform(0, math.pi),
-                TANK_STYLE.RED,
-                Operation(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g),
-                WEAPON_TYPE.COMMON_WEAPON,
-            ),
-            TankData(
-                self.gameMap.getPlotPos(self.gameMap.width - 2, self.gameMap.height - 2)[0]
-                + random.uniform(-5, 5),
-                self.gameMap.getPlotPos(self.gameMap.width - 2, self.gameMap.height - 2)[1]
-                + random.uniform(-5, 5),
-                random.uniform(0, math.pi),
-                TANK_STYLE.GREEN,
-                Operation(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0),
-                WEAPON_TYPE.COMMON_WEAPON,
-            ),
-        )
-
     def process(self, event: Event):
         if self.__gameMenu.isMenuShow:
             self.__gameMenu.process(event)
@@ -284,6 +208,9 @@ class ClientGameScene(Scene):
         self.__trySendKeyEvent(event)
 
     def update(self, delta: float):
+
+        # self.__gameObjectSpace.updateObjects(delta,False)
+        
         # 更新画面
         self.updateGameMap(delta)
         self.__ui.blit(
@@ -295,52 +222,36 @@ class ClientGameScene(Scene):
         self.updateGameMenu(delta)
 
     def updateGameMap(self, delta: float):
-        if self.__isLoaded is False:
-            return
         self.__gameUI.fill(BACKGROUND)
         self.__gameObjectSpace.renderObjects(self.__gameUI)
 
     def updateScoreBoard(self, delta: float):
-        if self.__isLoaded is False or self.__isScoreChanged is False:
-            return
+        # if self.__isScoreChanged is False:
+        #     return
+        for key in self.__scores:
+            if key not in self.__gameObjectSpace.objects:
+                return
+            
         self.__scoreUI.fill(BACKGROUND)
-        self.__scoreUI.blit(
-            self.__redTank.surface,
-            (
-                self.__scoreUI.get_width() / 2 - 100 - self.__redTank.surface.get_width() / 2,
-                PLOT_HEIGHT / 2 - self.__redTank.surface.get_height() / 2,
-            ),
-        )
-        self.__scoreUI.blit(
-            self.__greenTank.surface,
-            (
-                self.__scoreUI.get_width() / 2 + 100 - self.__greenTank.surface.get_width() / 2,
-                PLOT_HEIGHT / 2 - self.__greenTank.surface.get_height() / 2,
-            ),
-        )
-        scoreSurface1, scoreRect1 = MEDIAN_FONT.render(f"{self.__redScore}", FONT_COLOR)
-        self.__scoreUI.blit(
-            scoreSurface1,
-            (
-                self.__scoreUI.get_width() / 2
-                - 100
-                + self.__redTank.surface.get_width()
-                - scoreRect1.width / 2,
-                PLOT_HEIGHT / 2 - scoreRect1.height / 2,
-            ),
-        )
-        scoreSurface2, scoreRect2 = MEDIAN_FONT.render(f"{self.__greenScore}", FONT_COLOR)
-        self.__scoreUI.blit(
-            scoreSurface2,
-            (
-                self.__scoreUI.get_width() / 2
-                + 100
-                + self.__greenTank.surface.get_width()
-                - scoreRect2.width / 2,
-                PLOT_HEIGHT / 2 - scoreRect2.height / 2,
-            ),
-        )
-        self.__isScoreChanged = False
+
+        SCORE_PART_WIDTH = 320
+
+
+        basePoint = ((self.__scoreUI.get_width() - SCORE_PART_WIDTH * len(self.__scores)) / 2, 36)
+        for i, key in enumerate(self.__scores):
+            if key in self.__gameObjectSpace.objects:
+                self.__scoreUI.blit(
+                    self.__gameObjectSpace.objects[key].surface,
+                    (basePoint[0] + i * SCORE_PART_WIDTH, basePoint[1]),
+                )
+                self.__scoreUI.blit(
+                    MEDIAN_FONT.render(f"{self.__scores[key]}", FONT_COLOR)[0],
+                    (basePoint[0] + 100 + i * SCORE_PART_WIDTH, basePoint[1]),
+                )
+            # else:
+            #     self.__isScoreChanged = True
+
+        
 
     def updateGameMenu(self, delta: float):
         self.__gameMenu.update(delta)
@@ -357,8 +268,6 @@ class ClientGameScene(Scene):
         # EventManager.removeHandler(TANK_REMOVED_EVENT_TYPE, self.onTankRemoved)
         self.unregisterEvents()
         self.gameObjectSpace.clearObjects()
-        if self.gameItemManager is not None:
-            self.gameItemManager.cancelGenerate()
 
     def __trySendKeyEvent(self, event: Event):
         if OnlineManager.isConnected() and OnlineManager.isClient():
@@ -366,11 +275,3 @@ class ClientGameScene(Scene):
                 OnlineManager.sendEvent(ONLINE_KEYDOWN_EVENT_TYPE, {"key": event.key})
             elif event.type == KEYUP:
                 OnlineManager.sendEvent(ONLINE_KEYUP_EVENT_TYPE, {"key": event.key})
-
-
-
-    def __onGameLoaded(self, _: None):
-        self.__isGameOver = False
-        self.__isLoaded = True
-        if self.gameItemManager is not None:
-            self.gameItemManager.startGenerate()

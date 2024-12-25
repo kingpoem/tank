@@ -1,20 +1,17 @@
 import pickle
 import socket
 import threading
-from typing import Any, Sequence
+from typing import Any
 
 from loguru import logger
 from pygame.event import Event
 from game.events.delegate import Delegate
 from game.events.eventDelegate import EventDelegate
 from game.events.eventManager import EventManager
-from game.defines import SERVER_SCENE_DATA_EVENT_TYPE
 from game.events.globalEvents import GlobalEvents
 from game.gameObject import GameObjectData
-from game.keyPressedManager import LOCAL
 from game.sceneManager import SCENE_TYPE, SceneManager
 from online.onlineData import EventData, GameUpdateData, OnlineData
-from utils.onlineUtil import recvAll
 
 
 class OnlineManager:
@@ -40,19 +37,10 @@ class OnlineManager:
                     return
                 logger.info(f"客户端已连接：{address}")
 
-                def __checkConnection():
-                    try:
-                        if self.__client is not None:
-                            self.__client.send(pickle.dumps(0))
-                    except:
-                        logger.info("客户端断开连接")
-                        OnlineManager.close()
-                        SceneManager.changeScene(SCENE_TYPE.START_SCENE)
-
-                SceneManager.changeScene(SCENE_TYPE.GAME_SCENE, False)
+                OnlineManager.ConnectionStarted(None)
                 while True:
                     try:
-                        bytes = self.__client.recv(2048)
+                        bytes = self.__client.recv(1024)
                         logger.trace(f"服务器接收数据 {len(bytes)}")
                         data = pickle.loads(bytes)
                         if isinstance(data, EventData):
@@ -62,11 +50,14 @@ class OnlineManager:
                             else:
                                 event = Event(data.eventType)
                             EventManager.raiseEvent(event)
+
                     except ConnectionAbortedError as e:
                         logger.exception("服务器接收数据失败", e)
                     except Exception as e:
                         logger.exception(e)
                         break
+
+                self.close()
 
             self.__thread = threading.Thread(target=__serverThread)
             self.__thread.start()
@@ -106,23 +97,15 @@ class OnlineManager:
                 try:
                     self.__client.connect((host, port))
                     self.__isConnected = True
-                    SceneManager.changeScene(SCENE_TYPE.CLIENT_GAME_SCENE, False)
+                    OnlineManager.ConnectionStarted(None)
                 except Exception as e:
                     logger.exception("连接到服务器失败", e)
 
-                def __checkConnection():
-                    try:
-                        self.__client.send(pickle.dumps(0))
-                    except:
-                        logger.info("无法连接到服务器")
-                        OnlineManager.close()
-                        SceneManager.changeScene(SCENE_TYPE.START_SCENE)
-
                 while True:
                     try:
-                        bytes = self.__client.recv(4096)
-                        logger.trace(f"客户端接收数据 {len(bytes)}")
-                        data = pickle.loads(bytes)
+                        reBytes = self.__client.recv(4096)
+                        logger.trace(f"客户端接收数据 {len(reBytes)}")
+                        data = pickle.loads(reBytes)
                         if isinstance(data, EventData):
                             event: Event
                             if data.data is not None:
@@ -131,6 +114,7 @@ class OnlineManager:
                                 event = Event(data.eventType)
                             EventManager.raiseEvent(event)
                         if isinstance(data, GameUpdateData):
+                            GlobalEvents.GameScoreUpdated(data.scores)
                             for key in data.data:
                                 OnlineManager.GameObjectChanged(key, data.data[key])
 
@@ -139,6 +123,7 @@ class OnlineManager:
                     except Exception as e:
                         logger.exception(e)
                         break
+
 
             self.__thread = threading.Thread(target=__clientThread, args=(host, port))
             self.__thread.start()
@@ -161,8 +146,10 @@ class OnlineManager:
             self.__thread.join(0)
 
     __onlineObject: __Server | __Client | None = None
+    # __requestGameObjectKeys = set[str]()
 
     GameObjectChanged = Delegate[str, GameObjectData]("从服务器接收到游戏对象数据被改变")
+    ConnectionStarted = Delegate[None]("连接启动")
     ConnectionClosed = EventDelegate[None]("连接关闭")
 
     def __init__(self) -> None:
@@ -181,6 +168,10 @@ class OnlineManager:
         return (
             OnlineManager.__onlineObject is not None and OnlineManager.__onlineObject.isConnected()
         )
+
+    # @staticmethod
+    # def getRequestGameObjectKeys():
+    #     return  OnlineManager.__requestGameObjectKeys
 
     @staticmethod
     def createServer(host: str, port: int):

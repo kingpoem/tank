@@ -2,7 +2,7 @@
 
 ## 📄介绍
 
-![](https://img.shields.io/badge/Python%203.10.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![](https://img.shields.io/badge/Python%203.12.7-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
 使用`Python`库
 - `pygame`
@@ -13,8 +13,8 @@
 ### V0.0.6
 - [X] 实现设置功能
 
-## V0.0.7 
-- [ ] 实现局域网联机功能
+## V0.0.8 
+- [X] 实现局域网联机功能
 
 
 ## 游戏道具类型
@@ -29,4 +29,4 @@
 
 - ### 破片弹武器道具
 
-    发射破片炮弹，在命中目标或超过一定时间后爆炸，发射大量破片
+    发射破片炮弹，在命中目标或超过一定时间后爆炸，发射范围型破片，在爆炸范围内的坦克会被立刻摧毁

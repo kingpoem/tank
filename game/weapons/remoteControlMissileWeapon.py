@@ -28,7 +28,7 @@ class RemoteControlMissileWeapon(Weapon):
     __missile: Missile | None = None
 
     def fire(self):
-        from game.tank import Tank, TANK_STYLE
+        from game.tank import Tank, TANK_COLOR
         from game.operateable import Operateable
 
         if isinstance(self.owner, Operateable):
@@ -41,7 +41,7 @@ class RemoteControlMissileWeapon(Weapon):
 
             style = (255, 255, 255)
             if isinstance(self.owner, Tank):
-                style = self.owner.style
+                style = self.owner.color
 
             GlobalEvents.GameObjectAdding(
                 key,

@@ -24,7 +24,7 @@ TANK_COLLISION_TYPE = 1
 TANK_REMOVED_EVENT_TYPE = EventManager.allocateEventType()
 
 
-class TANK_STYLE(Enum):
+class TANK_COLOR(Enum):
     RED = (255,0,0)
     GREEN = (32,172,56)
 
@@ -35,14 +35,14 @@ class TankData(GameObjectData):
         x: float,
         y: float,
         angle: float,
-        style: tuple[int,int,int],
+        color: tuple[int,int,int],
         operation: Operation | None = None,
         weaponType: WEAPON_TYPE | None = None,
     ):
         self.x = x
         self.y = y
         self.angle = angle
-        self.style = style
+        self.color = color
         self.operation = operation
         self.weaponType = weaponType
 
@@ -54,8 +54,6 @@ class Tank(GameObject, Operateable):
 
     TANK_WIDTH = 50
 
-    TANK_MOVE_SPEED = 700000
-    ROTATE_SPEED = 24
 
     __collisionHandler: CollisionHandler | None = None
 
@@ -72,7 +70,8 @@ class Tank(GameObject, Operateable):
     @weapon.setter
     def weapon(self, weapon: Weapon):
         from .weapons.commonWeapon import CommonWeapon
-
+        if type(weapon) is type(self.__weapon):
+            return
         if self.__weapon is not None:
             self.__weapon.onDropped()
         self.__weapon = weapon
@@ -82,12 +81,14 @@ class Tank(GameObject, Operateable):
         self.refreshTankStyle()
 
     @property
-    def style(self):
-        return self.__style
+    def color(self):
+        return self.__color
 
-    @style.setter
-    def style(self, style: tuple[int,int,int]):
-        self.__style = style
+    @color.setter
+    def color(self, value: tuple[int,int,int]):
+        if self.__color == value:
+            return
+        self.__color = value
         self.refreshTankStyle()
 
     def __init__(
@@ -108,7 +109,7 @@ class Tank(GameObject, Operateable):
         self.__tankDestorySound = mixer.Sound("assets/tank_destory.mp3")
         self.__tankDestorySound.set_volume(0.2)
 
-        self.style = data.style
+        self.__color = data.color
 
         if data.weaponType is None:
             self.weapon = WeaponFactory.createWeapon(self, WEAPON_TYPE.COMMON_WEAPON)
@@ -189,6 +190,9 @@ class Tank(GameObject, Operateable):
             self.weapon.fire()
             self.__shootSound.play()
 
+        if self.weapon.canUse() is False:
+            self.weapon = WeaponFactory.createWeapon(self, WEAPON_TYPE.COMMON_WEAPON)
+
         self.refreshTankStyle()
 
         logger.debug(f"坦克射击 {self.key} {type(self.__weapon)}")
@@ -197,7 +201,7 @@ class Tank(GameObject, Operateable):
         # from game.weapons.commonWeapon import CommonWeapon
         from game.weapons.ghostWeapon import GhostWeapon
         from game.weapons.remoteControlMissileWeapon import RemoteControlMissileWeapon
-        from game.weapons.fragmentBombWeapon import FragmentBombWeapon
+        from game.weapons.explosiveBombWeapon import ExplosiveBombWeapon
 
         lookPath = f"assets/tank.png"
         if self.weapon.canUse():
@@ -205,14 +209,14 @@ class Tank(GameObject, Operateable):
                 lookPath = f"assets/tank_with_missile.png"
             elif isinstance(self.weapon, GhostWeapon):
                 lookPath = f"assets/tank_with_ghost.png"
-            elif isinstance(self.weapon, FragmentBombWeapon):
+            elif isinstance(self.weapon, ExplosiveBombWeapon):
                 lookPath = f"assets/tank_with_bomb.png"
         # elif isinstance(weapon)
 
         img = image.load(lookPath).convert_alpha()
         self.surface = transform.smoothscale_by(img, Tank.TANK_WIDTH / img.get_width())
         filterSurface = Surface(self.surface.get_size())
-        filterSurface.fill(self.style)
+        filterSurface.fill(self.color)
         self.surface.blit(filterSurface, (0, 0), special_flags=BLEND_RGBA_MULT)
 
     @staticmethod
@@ -248,10 +252,10 @@ class Tank(GameObject, Operateable):
         )
 
     def onLeft(self, delta: float):
-        self.body.angular_velocity = -Tank.ROTATE_SPEED
+        self.body.angular_velocity = -2400 * delta
 
     def onRight(self, delta: float):
-        self.body.angular_velocity = Tank.ROTATE_SPEED
+        self.body.angular_velocity = 2400 * delta
 
     def onShoot(self, delta: float, isFirstShoot: bool):
         from game.scenes.gameScene import GameScene
@@ -265,7 +269,7 @@ class Tank(GameObject, Operateable):
             self.body.position[0],
             self.body.position[1],
             self.body.angle,
-            self.style,
+            self.color,
             self.operation,
             WeaponFactory.getWeaponType(self.weapon),
         )
@@ -274,7 +278,7 @@ class Tank(GameObject, Operateable):
         assert isinstance(data, TankData)
         self.body.position = (data.x, data.y)
         self.body.angle = data.angle
-        self.style = data.style
+        self.color = data.color
         self.operation = data.operation
         if data.weaponType is not None:
             self.weapon = WeaponFactory.createWeapon(self, data.weaponType)

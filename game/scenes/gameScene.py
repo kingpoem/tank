@@ -3,7 +3,7 @@ import math
 import random
 from typing import Any, Callable, Literal, Sequence
 from loguru import logger
-from pygame import K_DOWN, K_ESCAPE, KEYDOWN, KEYUP, QUIT, Rect, Surface
+from pygame import K_DOWN, K_ESCAPE, KEYDOWN, KEYUP, QUIT, K_b, K_w, Rect, Surface
 import pygame
 from pygame import transform
 from pygame.event import Event
@@ -12,8 +12,10 @@ from pymunk import Space
 
 # from game.gameLoop import GameLoop
 from game import tank
+from game.ai import AI
 from game.controls.floatMenu import FloatMenu
 from game.controls.selectionControl import Selection, SelectionControl
+from game.controls.textbox import TextBox
 from game.defines import (
     BACKGROUND,
     FONT_COLOR,
@@ -29,7 +31,7 @@ from game.events.eventDelegate import EventDelegate
 from game.events.globalEvents import GlobalEvents
 from game.events.timerManager import TimerManager
 from game.gameObject import GameObject, GameObjectData, GameObjectFactory
-from game.keyPressedManager import ONLINE
+from game.keyPressedManager import KEY_PRESS_TYPE
 from game.operateable import Operateable, Operation
 from game.spaces.gameObjectSpace import GAMEOBJECT_SPACE_TYPE, GameObjectSpace
 from game.events.eventManager import EventManager
@@ -47,10 +49,9 @@ from game.gameMap import (
     GameMapData,
 )
 from game.scenes.scene import Scene
-from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_STYLE, Tank, TankData
+from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_COLOR, Tank, TankData
 from game.weapons.weaponFactory import WEAPON_TYPE
 from online.onlineData import GameUpdateData
-from online.onlineManager import OnlineManager
 
 
 SCORE_UI_HEIGHT = 192
@@ -69,16 +70,14 @@ class GameScene(Scene):
 
     __gameMap: GameMap
 
-    __redScore: int = 0
-    __greenScore: int = 0
-
     __ui: Surface
     __gameUI: Surface
     __scoreUI: Surface
     __gameMenu: FloatMenu
 
-    __redTank: Tank
-    __greenTank: Tank
+    # __redTank: Tank
+    # __greenTank: Tank
+
     __isLoaded: bool = False
     __isGameOver: bool = False
     __isScoreChanged: bool = True
@@ -99,22 +98,6 @@ class GameScene(Scene):
         self.__gameMap = value
 
     @property
-    def redTank(self):
-        return self.__redTank
-
-    @redTank.setter
-    def redTank(self, value: Tank):
-        self.__redTank = value
-
-    @property
-    def greenTank(self):
-        return self.__greenTank
-
-    @greenTank.setter
-    def greenTank(self, value: Tank):
-        self.__greenTank = value
-
-    @property
     def gameObjectSpace(self):
         return self.__gameObjectSpace
 
@@ -129,6 +112,8 @@ class GameScene(Scene):
         self.GameOvered = EventDelegate[None]("本轮游戏结束")
 
         self.__config = config
+        self.__tanks = list[Tank]()
+        self.__scores = [0 for i in range(self.__config.aiNum + self.__config.playerNum)]
         self.__timerManager = TimerManager()
         self.__gameObjectSpace = GameObjectSpace()
         self.registerEvents()
@@ -142,35 +127,10 @@ class GameScene(Scene):
         self.__scoreUI = pygame.Surface((WINDOW_WIDTH, SCORE_UI_HEIGHT))
         self.__ui = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        def __backToStart():
-            from ..sceneManager import SceneManager, SCENE_TYPE
+        self.__initGameMenu()
+        self.__initGameMap()
 
-            SceneManager.changeScene(SCENE_TYPE.START_SCENE)
-
-        self.__gameMenu = FloatMenu(
-            self.__ui,
-            1080,
-            480,
-            SelectionControl(
-                1080,
-                480,
-                [
-                    Selection(
-                        lambda: "返回主菜单",
-                        SELECTION_HEIGHT,
-                        __backToStart,
-                    ),
-                    Selection(
-                        lambda: "退出游戏",
-                        SELECTION_HEIGHT,
-                        lambda: EventManager.raiseEventType(QUIT),
-                    ),
-                ],
-            ),
-        )
-
-        gameMapData = self.generateMapData()
-        GlobalEvents.GameObjectAdding("GameMap", gameMapData)
+        self.__ai: AI | None = None
 
     def registerEvents(self):
         self.GameOvered += self.__onGameOvered
@@ -194,6 +154,80 @@ class GameScene(Scene):
         # EventManager.removeHandler(GAME_OBJECT_REMOVE_EVENT_TYPE)
         # EventManager.removeHandler(GAME_OBJECT_CLEAR_EVENT_TYPE)
 
+    def __initGameMenu(self):
+        from online.onlineManager import OnlineManager
+
+        def __backToStart():
+            from ..sceneManager import SceneManager, SCENE_TYPE
+
+            SceneManager.changeScene(SCENE_TYPE.START_SCENE)
+
+        portTextBox = TextBox("开放端口号", "8900")
+
+        def __getOnlineInfo():
+            if OnlineManager.isConnected():
+                if OnlineManager.isServer():
+                    return "已创建服务器"
+                elif OnlineManager.isClient():
+                    return "已连接服务器"
+            return "创建局域网游戏"
+
+        def __onConnected(_: None):
+            # 发送初始数据
+            datas = dict[str, GameObjectData]()
+            for key in self.gameObjectSpace.objects:
+                datas[key] = self.gameObjectSpace.objects[key].getData()
+            socres = dict[str, int]()
+            for i, tank in enumerate(self.__tanks):
+                socres[tank.key] = self.__scores[i]
+            # GlobalEvents.GameScoreUpdated(socres)
+            # logger.info(f"发送初始数据 {datas}")
+            OnlineManager.sendData(GameUpdateData(socres, datas))
+
+            # OnlineManager.sendData(GameUpdateData(datas))
+
+            p2Tank = self.gameObjectSpace.objects["P2Tank"]
+            if isinstance(p2Tank, Tank):
+                p2Tank.operation = Operation(
+                    pygame.K_w,
+                    pygame.K_s,
+                    pygame.K_a,
+                    pygame.K_d,
+                    pygame.K_g,
+                    KEY_PRESS_TYPE.ONLINE,
+                )
+
+        def __createServer():
+            try:
+                OnlineManager.ConnectionStarted += __onConnected
+                OnlineManager.createServer("0.0.0.0", int(portTextBox.text))
+            except Exception as e:
+                logger.exception("创建服务器失败", e)
+
+        self.__gameMenu = FloatMenu(
+            self.__ui,
+            1080,
+            480,
+            SelectionControl(
+                1080,
+                480,
+                [
+                    Selection(
+                        lambda: "返回主菜单",
+                        SELECTION_HEIGHT,
+                        __backToStart,
+                    ),
+                    Selection(portTextBox, SELECTION_HEIGHT),
+                    Selection(__getOnlineInfo, SELECTION_HEIGHT, __createServer),
+                    Selection(
+                        lambda: "退出游戏",
+                        SELECTION_HEIGHT,
+                        lambda: EventManager.raiseEventType(QUIT),
+                    ),
+                ],
+            ),
+        )
+
     def __gameMapAdded(self):
         if self.__gameItemManager is not None:
             self.__gameItemManager.reset(self.__gameMap)
@@ -204,25 +238,19 @@ class GameScene(Scene):
                 0, 0, self.__gameMap.surface.get_width(), self.__gameMap.surface.get_height()
             )
         # 随后加载坦克
-        tankDatas = self.generateTankDatas()
-        if OnlineManager.isConnected() and OnlineManager.isServer():
-            tankDatas[1].operation = Operation(
-                pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g, ONLINE
-            )
-        GlobalEvents.GameObjectAdding("RedTank", tankDatas[0])
-        GlobalEvents.GameObjectAdding("GreenTank", tankDatas[1])
+        self.__initTanks()
 
     def __onGameObjectAdding(self, key: str, data: GameObjectData):
         self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
 
     def __onGameObjectAdded(self, obj: GameObject):
         if isinstance(obj, Tank):
-            if obj.key == "RedTank":
-                self.__redTank = obj
-                self.__redTank.Removed += self.__onTankRemoved
-            elif obj.key == "GreenTank":
-                self.__greenTank = obj
-                self.__greenTank.Removed += self.__onTankRemoved
+
+            obj.Removed += self.__onTankRemoved
+            if obj.key == "AITank":
+                self.__ai = AI(obj, self.gameMap)
+            self.__tanks.append(obj)
+            if len(self.__tanks) == self.__config.aiNum + self.__config.playerNum:
                 self.GameLoaded(None)
 
         elif isinstance(obj, GameMap):
@@ -238,58 +266,72 @@ class GameScene(Scene):
     def __onGameObjectClearing(self, _: None):
         self.__gameObjectSpace.clearObjects()
 
-    def startNewTurn(self) -> bool:
+    def startNewTurn(self):
         """
         开始新一轮游戏
-        返回值False则代表开始最后一轮，之后不在重新开始
         """
         GlobalEvents.GameObjectsClearing(None)
-        gameMapData = self.generateMapData()
+        self.__initGameMap()
 
-        # 决定渲染顺序
-        GlobalEvents.GameObjectAdding("GameMap", gameMapData)
-
-        return True
-
-    def generateMapData(self) -> GameMapData:
+    def __initGameMap(self):
         # 地图初始化
         width = random.randint(MAP_MIN_WIDTH // 2, MAP_MAX_WIDTH // 2) * 2 + 1
         height = random.randint(MAP_MIN_HEIGHT // 2, MAP_MAX_HEIGHT // 2) * 2 + 1
-        return GameMapData(width, height)
+        GlobalEvents.GameObjectAdding("GameMap", GameMapData(width, height))
 
-    def generateTankDatas(self) -> Sequence[TankData]:
+    def __initTanks(self):
+        from online.onlineManager import OnlineManager
+
         # 坦克初始化
 
-        tankDatas = list[TankData]()
+        self.__tanks.clear()
 
-        mapX,mapY = self.gameMap.getRandomEmptyMapPos()
-
-        tankDatas.append(
+        mapX, mapY = self.gameMap.getRandomEmptyMapPos()
+        GlobalEvents.GameObjectAdding(
+            "P1Tank",
             TankData(
                 self.gameMap.getPlotPos(mapX, mapY)[0] + random.uniform(-5, 5),
                 self.gameMap.getPlotPos(mapX, mapY)[1] + random.uniform(-5, 5),
                 random.uniform(0, math.pi),
-                TANK_STYLE.RED.value,
+                TANK_COLOR.RED.value,
                 Operation(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g),
                 WEAPON_TYPE.FRAGMENTBOMB_WEAPON,
-            )
+            ),
         )
+
         if self.__config.playerNum == 2:
-            mapX,mapY = self.gameMap.getRandomEmptyMapPos()
-            tankDatas.append(
+            mapX, mapY = self.gameMap.getRandomEmptyMapPos()
+            P2TankData = TankData(
+                self.gameMap.getPlotPos(mapX, mapY)[0] + random.uniform(-5, 5),
+                self.gameMap.getPlotPos(mapX, mapY)[1] + random.uniform(-5, 5),
+                random.uniform(0, math.pi),
+                TANK_COLOR.GREEN.value,
+                Operation(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0),
+                WEAPON_TYPE.COMMON_WEAPON,
+            )
+            if OnlineManager.isConnected() and OnlineManager.isServer():
+                P2TankData.operation = Operation(
+                    pygame.K_w,
+                    pygame.K_s,
+                    pygame.K_a,
+                    pygame.K_d,
+                    pygame.K_g,
+                    KEY_PRESS_TYPE.ONLINE,
+                )
+            GlobalEvents.GameObjectAdding("P2Tank", P2TankData)
+        if self.__config.aiNum == 1:
+            mapX, mapY = self.gameMap.getRandomEmptyMapPos()
+            GlobalEvents.GameObjectAdding(
+                "AITank",
                 TankData(
                     self.gameMap.getPlotPos(mapX, mapY)[0] + random.uniform(-5, 5),
                     self.gameMap.getPlotPos(mapX, mapY)[1] + random.uniform(-5, 5),
                     random.uniform(0, math.pi),
-                    TANK_STYLE.GREEN.value,
-                    Operation(
-                        pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0
-                    ),
+                    (164, 164, 164),
+                    None,
                     WEAPON_TYPE.COMMON_WEAPON,
-                )
+                ),
             )
-
-        return tankDatas
 
     def process(self, event: Event):
         if self.__gameMenu.isMenuShow:
@@ -303,9 +345,13 @@ class GameScene(Scene):
                     self.__gameMenu.show()
 
     def update(self, delta: float):
-        if self.__gameMenu.isMenuShow is False:
+        from online.onlineManager import OnlineManager
+
+        if self.__gameMenu.isMenuShow is False or OnlineManager.isConnected():
             self.__gameObjectSpace.updateObjects(delta)
             self.__timerManager.updateTimers(delta)
+            if self.__ai is not None:
+                self.__ai.update(delta)
             self.__trySendSceneData()
 
         # 更新画面
@@ -327,43 +373,20 @@ class GameScene(Scene):
     def updateScoreBoard(self, delta: float):
         if self.__isLoaded is False or self.__isScoreChanged is False:
             return
+            
+
         self.__scoreUI.fill(BACKGROUND)
-        self.__scoreUI.blit(
-            self.__redTank.surface,
-            (
-                self.__scoreUI.get_width() / 2 - 100 - self.__redTank.surface.get_width() / 2,
-                PLOT_HEIGHT / 2 - self.__redTank.surface.get_height() / 2,
-            ),
-        )
-        self.__scoreUI.blit(
-            self.__greenTank.surface,
-            (
-                self.__scoreUI.get_width() / 2 + 100 - self.__greenTank.surface.get_width() / 2,
-                PLOT_HEIGHT / 2 - self.__greenTank.surface.get_height() / 2,
-            ),
-        )
-        scoreSurface1, scoreRect1 = MEDIAN_FONT.render(f"{self.__redScore}", FONT_COLOR)
-        self.__scoreUI.blit(
-            scoreSurface1,
-            (
-                self.__scoreUI.get_width() / 2
-                - 100
-                + self.__redTank.surface.get_width()
-                - scoreRect1.width / 2,
-                PLOT_HEIGHT / 2 - scoreRect1.height / 2,
-            ),
-        )
-        scoreSurface2, scoreRect2 = MEDIAN_FONT.render(f"{self.__greenScore}", FONT_COLOR)
-        self.__scoreUI.blit(
-            scoreSurface2,
-            (
-                self.__scoreUI.get_width() / 2
-                + 100
-                + self.__greenTank.surface.get_width()
-                - scoreRect2.width / 2,
-                PLOT_HEIGHT / 2 - scoreRect2.height / 2,
-            ),
-        )
+
+        SCORE_PART_WIDTH = 320
+
+        basePoint = ((self.__scoreUI.get_width() - SCORE_PART_WIDTH * len(self.__tanks)) / 2, 36)
+        for i, tank in enumerate(self.__tanks):
+            self.__scoreUI.blit(tank.surface, (basePoint[0] + i * SCORE_PART_WIDTH, basePoint[1]))
+            self.__scoreUI.blit(
+                MEDIAN_FONT.render(f"{self.__scores[i]}", FONT_COLOR)[0],
+                (basePoint[0] + 100 + i * SCORE_PART_WIDTH, basePoint[1]),
+            )
+
         self.__isScoreChanged = False
 
     def updateGameMenu(self, delta: float):
@@ -385,6 +408,8 @@ class GameScene(Scene):
             self.gameItemManager.cancelGenerate()
 
     def __trySendSceneData(self):
+        from online.onlineManager import OnlineManager
+
         if OnlineManager.isConnected() and OnlineManager.isServer():
             datas = dict[str, GameObjectData]()
             for key in self.gameObjectSpace.objects:
@@ -395,22 +420,20 @@ class GameScene(Scene):
                 if key.startswith("GameItem_"):
                     continue
                 datas[key] = self.gameObjectSpace.objects[key].getData()
-            OnlineManager.sendData(GameUpdateData(datas))
+            scores = dict[str, int]()
+            for i, tank in enumerate(self.__tanks):
+                scores[tank.key] = self.__scores[i]
+            GlobalEvents.GameScoreUpdated(scores)
+            OnlineManager.sendData(GameUpdateData(scores,datas))
 
     def __onGameOvered(self, _: None):
-        if self.redTank.isExist:
-            self.__redScore += 1
-        if self.greenTank.isExist:
-            self.__greenScore += 1
+        existTankIndex = [i for i, tank in enumerate(self.__tanks) if tank.isExist]
+        if len(existTankIndex) == 1:
+            self.__scores[existTankIndex[0]] += 1
 
         self.__isScoreChanged = True
 
-        # 仅发送数据给客户端
-        if OnlineManager.isConnected() and OnlineManager.isServer():
-            GlobalEvents.GameScoreUpdated(self.__redScore, self.__greenScore)
-
-        if self.startNewTurn():
-            ...
+        self.startNewTurn()
 
     def __onGameLoaded(self, _: None):
         self.__isGameOver = False
@@ -419,6 +442,10 @@ class GameScene(Scene):
             self.gameItemManager.startGenerate()
 
     def __onTankRemoved(self, obj: GameObject):
+        existTankCount = len([tank for tank in self.__tanks if tank.isExist])
+        logger.debug(f"{existTankCount} {self.__isGameOver}")
+        if not (existTankCount == 0 or existTankCount == 1):
+            return
         if self.__isGameOver:
             return
         self.__isGameOver = True

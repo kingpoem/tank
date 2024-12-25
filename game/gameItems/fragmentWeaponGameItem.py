@@ -25,9 +25,9 @@ class FragmentWeaponGameItem(GameItem):
 
     @staticmethod
     def onTouched(tank: Tank):
-        from game.weapons.fragmentBombWeapon import FragmentBombWeapon
+        from game.weapons.explosiveBombWeapon import ExplosiveBombWeapon
 
-        tank.weapon = FragmentBombWeapon(tank)
+        tank.weapon = ExplosiveBombWeapon(tank)
         logger.debug(f"当前坦克道具 {tank.weapon}")
 
     def getData(self) -> GameObjectData:

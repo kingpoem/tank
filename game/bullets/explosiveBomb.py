@@ -9,19 +9,19 @@ from game.gameObject import GameObject, GameObjectData
 from game.gameSettings import GlobalSettingsManager
 
 
-class FragmentBombData(GameObjectData):
+class ExplosiveBombData(GameObjectData):
     def __init__(self,x : float,y : float,angle : float):
         self.x = x
         self.y = y
         self.angle = angle
 
 
-class FragmentBomb(GameObject):
+class ExplosiveBomb(GameObject):
     """
-    破片炮弹
+    高爆弹
     """
 
-    def __init__(self,key : str, data : FragmentBombData):
+    def __init__(self,key : str, data : ExplosiveBombData):
         BULLET_DISAPPEAR_TIME_MS = 8_000
         super().__init__(key, data)
 
@@ -81,9 +81,9 @@ class FragmentBomb(GameObject):
         self.__bulletDisappearTimer.update(delta)
 
     def getData(self) -> GameObjectData:
-        return FragmentBombData(self.body.position[0], self.body.position[1], self.body.angle)
+        return ExplosiveBombData(self.body.position[0], self.body.position[1], self.body.angle)
     
     def setData(self, data: GameObjectData):
-        assert isinstance(data, FragmentBombData)
+        assert isinstance(data, ExplosiveBombData)
         self.body.position = (data.x, data.y)
         self.body.angle = data.angle

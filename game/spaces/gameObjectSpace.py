@@ -73,9 +73,10 @@ class GameObjectSpace:
         """
         if key not in self.__objects:
             return
-        self.__objects[key].removeBody(self.space)
-        self.__objects[key].onRemoved()
-        del self.__objects[key]
+        obj = self.__objects[key]
+        self.__objects.pop(key)
+        obj.removeBody(self.space)
+        obj.onRemoved()
 
     def clearObjects(self):
         """
@@ -88,7 +89,9 @@ class GameObjectSpace:
             obj.removeBody(self.space)
             obj.onRemoved()
 
-    def updateObjects(self, delta: float):
+        logger.debug(f"所有游戏对象已被清除")
+
+    def updateObjects(self, delta: float,physical : bool = True):
         """
         更新游戏对象
         """
@@ -97,12 +100,15 @@ class GameObjectSpace:
         for key in self.objects.values():
             if isinstance(key, Operateable):
                 key.operate(delta)
-        DETAIL_NUM = 8
-        for i in range(DETAIL_NUM):
-            self.__space.step(delta / DETAIL_NUM)
+        if physical:
+            DETAIL_NUM = 8
+            for i in range(DETAIL_NUM):
+                self.__space.step(delta / DETAIL_NUM)
+
         for obj in self.__objects.values():
             obj.update(delta)
-        if self.__spaceRegion is not None:
+
+        if self.__spaceRegion is not None and physical:
             deleteList = [
                 key
                 for key in self.__objects
@@ -116,7 +122,8 @@ class GameObjectSpace:
         """
         渲染游戏对象
         """
-        for obj in self.__objects.values():
+        copy = self.__objects.copy()
+        for obj in copy.values():
             obj.render(screen)
 
     def getGameObjectByBody(self, body : Body) -> GameObject | None:

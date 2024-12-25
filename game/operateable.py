@@ -1,21 +1,12 @@
 from abc import ABC
 from typing import final
 
+from game.keyPressedManager import KEY_PRESS_TYPE
+
 
 class Operation:
 
-    type: int
-    """操作类型 有SERVER和CLIENT之分"""
-    forwardKey: int
-    """前进按键"""
-    backKey: int
-    """后退按键"""
-    leftKey: int
-    """左转按键"""
-    rightKey: int
-    """右转按键"""
-    shootKey: int
-    """射击按键"""
+
 
     def __init__(
         self,
@@ -24,14 +15,20 @@ class Operation:
         leftKey: int,
         rightKey: int,
         shootKey: int,
-        type: int = 0,
+        type: KEY_PRESS_TYPE = KEY_PRESS_TYPE.LOCAL,
     ):
         self.forwardKey = forwardKey
+        """前进按键"""
         self.backKey = backKey
+        """后退按键"""
         self.leftKey = leftKey
+        """左转按键"""
         self.rightKey = rightKey
+        """右转按键"""
         self.shootKey = shootKey
+        """射击按键"""
         self.type = type
+        """按键操作来源类型"""
         pass
 
 

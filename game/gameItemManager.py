@@ -1,29 +1,21 @@
-from typing import Callable, final
+from typing import Callable
 
 from loguru import logger
-from pygame.event import Event
 
 from game.events.delegate import Delegate
-from game.events.eventDelegate import EventDelegate
 from game.events.timerManager import Timer, TimerManager
-from online.onlineManager import OnlineManager
 
 from .events.globalEvents import GlobalEvents
-from .gameObject import GameObject, GameObjectData, GameObjectFactory
-from .spaces.gameObjectSpace import GameObjectSpace
-from .events.eventManager import EventManager
-from .gameItems.fragmentWeaponGameItem import FragmentWeaponGameItem, FragmentWeaponGameItemData
+from .gameObject import GameObject, GameObjectData
+from .gameItems.fragmentWeaponGameItem import FragmentWeaponGameItemData
 from .gameItems.remoteControlMissileGameItem import (
-    RemoteControlMissileGameItem,
     RemoteControlMissileGameItemData,
 )
-from .gameItems.gameItem import GAMEITEM_COLLISION_TYPE, GameItem
-from .gameItems.ghostWeaponGameItem import GhostWeaponGameItem, GhostWeaponGameItemData
+from .gameItems.gameItem import GameItem
+from .gameItems.ghostWeaponGameItem import GhostWeaponGameItemData
 from .gameMap import MAP_PLOT_TYPE, GameMap
 import random
 
-
-from .sceneManager import SceneManager
 
 
 class GameItemManager:
@@ -69,6 +61,7 @@ class GameItemManager:
         self.__gameItemCount += 1
 
     def __onGameObjectAdded(self, obj: GameObject):
+        from online.onlineManager import OnlineManager
         if isinstance(obj, GameItem):
             if OnlineManager.isConnected() and OnlineManager.isClient():
                 return

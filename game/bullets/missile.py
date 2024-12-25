@@ -117,11 +117,11 @@ class Missile(GameObject, Operateable):
 
     def getData(self) -> GameObjectData:
         return MissileData(
-            self.body.position[0], self.body.position[1], self.body.angle, self.style
+            self.body.position[0], self.body.position[1], self.body.angle, self.__style
         )
 
     def setData(self, data: GameObjectData):
         assert isinstance(data, MissileData)
         self.body.position = (data.x, data.y)
         self.body.angle = data.angle
-        self.style = data.style
+        self.__style = data.style

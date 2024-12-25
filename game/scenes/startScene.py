@@ -253,6 +253,7 @@ class StartScene(Scene):
     def __initCreaterServerMenu(self):
         portTextBox = TextBox("port", "8900")
 
+
         def __createServer():
             try:
                 host = "0.0.0.0"
@@ -281,13 +282,21 @@ class StartScene(Scene):
         portTextBox = TextBox("port", "8900")
 
         def __connectServer():
+
+            def __onConnected(_ :None):
+                from ..sceneManager import SceneManager,SCENE_TYPE
+                OnlineManager.ConnectionStarted -= __onConnected
+                SceneManager.changeScene(SCENE_TYPE.CLIENT_GAME_SCENE, False)
+
             try:
                 host = hostTextBox.text
                 port = int(portTextBox.text)
+                OnlineManager.ConnectionStarted += __onConnected
                 OnlineManager.connectServer(host, port)
             except Exception as e:
                 logger.exception(e)
-                return
+
+            
 
         self.__connectServerMenu = FloatMenu(
             self.ui,

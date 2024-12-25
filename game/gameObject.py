@@ -1,12 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Callable, TypeVar, final
+from loguru import logger
 from pygame import Surface
 from pymunk import Body, Shape, Space
 
 from game.events.delegate import Delegate
-
-
-
 
 
 class GameObjectData(ABC): ...
@@ -32,7 +30,6 @@ class GameObject(ABC):
     物理世界复合形状
     """
 
-
     @property
     def key(self) -> str:
         """
@@ -41,7 +38,6 @@ class GameObject(ABC):
         并且需要在不同电脑上保持一致
         """
         return self.__key
-    
 
     @final
     @property
@@ -52,15 +48,17 @@ class GameObject(ABC):
             return self.CurrentSpace.containObject(self)
         else:
             return False
+
     @final
     @property
     def CurrentSpace(self):
         """获取当前物体所处在的游戏空间 如果不存在返回None"""
         from .sceneManager import SceneManager
         from .scenes.gameScene import GameScene
+        from .scenes.clientGameScene import ClientGameScene
 
         curScene = SceneManager.getCurrentScene()
-        if isinstance(curScene, GameScene):
+        if isinstance(curScene, GameScene) or isinstance(curScene, ClientGameScene):
             return curScene.gameObjectSpace
         else:
             return None
@@ -78,7 +76,6 @@ class GameObject(ABC):
         self.Removed = Delegate[GameObject](f"{key} 被移除游戏空间")
         """当物体被移除游戏空间时触发"""
 
-
     @abstractmethod
     def render(self, screen: Surface):
         """
@@ -86,7 +83,7 @@ class GameObject(ABC):
         """
         pass
 
-    def update(self,delta : float):
+    def update(self, delta: float):
         """
         每帧调用更新函数
         """
@@ -104,11 +101,11 @@ class GameObject(ABC):
         """
         space.remove(self.body, *self.shapes)
 
-    def onEntered(self): 
+    def onEntered(self):
         self.Entered(self)
         ...
 
-    def onRemoved(self): 
+    def onRemoved(self):
         self.Removed(self)
         ...
 
@@ -117,11 +114,9 @@ class GameObject(ABC):
         """从当前游戏对象获取游戏对象数据"""
         ...
 
-    
     def setData(self, data: GameObjectData):
         """从游戏对象数据设置更改当前游戏对象"""
         raise NotImplementedError("游戏对象不支持重新设置数据")
-
 
 
 @final
@@ -136,7 +131,7 @@ class GameObjectFactory(ABC):
         from .gameMap import GameMapData, GameMap
         from .tank import TankData, Tank
         from .bullets.commonBullet import CommonBulletData, CommonBullet
-        from .bullets.fragmentBomb import FragmentBombData, FragmentBomb
+        from .bullets.explosiveBomb import ExplosiveBombData, ExplosiveBomb
         from .bullets.ghostBullet import GhostBulletData, GhostBullet
         from .bullets.missile import MissileData, Missile
         from .gameItems.fragmentWeaponGameItem import (
@@ -148,22 +143,23 @@ class GameObjectFactory(ABC):
             RemoteControlMissileGameItemData,
             RemoteControlMissileGameItem,
         )
-        from .effects.fragmentBombEffect import FragmentBombEffectData,FragmentBombEffect
+        from .effects.explosiveBombEffect import ExplosiveBombEffectData, ExplosiveBombEffect
 
         recipe: dict[type[GameObjectData], type[GameObject]] = {
             GameMapData: GameMap,
             TankData: Tank,
             CommonBulletData: CommonBullet,
-            FragmentBombData: FragmentBomb,
+            ExplosiveBombData: ExplosiveBomb,
             GhostBulletData: GhostBullet,
             MissileData: Missile,
             FragmentWeaponGameItemData: FragmentWeaponGameItem,
             GhostWeaponGameItemData: GhostWeaponGameItem,
             RemoteControlMissileGameItemData: RemoteControlMissileGameItem,
-            FragmentBombEffectData : FragmentBombEffect
+            ExplosiveBombEffectData: ExplosiveBombEffect,
         }
 
         if type(data) in recipe:
             return recipe[type(data)](key, data)
         else:
-            raise TypeError(f"无法创建游戏对象 {key,type(data)}")
+            # logger.error(f"无法创建游戏对象 {key,type(data)}")
+            raise TypeError(f"无法创建游戏对象 {key, type(data)}")
