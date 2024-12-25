@@ -1,6 +1,6 @@
 from loguru import logger
 from game.bullets.commonBullet import CommonBullet
-from game.bullets.missile import MISSILE_TYPE, Missile, MissileData
+from game.bullets.missile import  Missile, MissileData
 from game.events.eventManager import EventManager
 from game.events.globalEvents import GlobalEvents
 from game.gameObject import GameObject, GameObjectFactory
@@ -38,10 +38,10 @@ class RemoteControlMissileWeapon(Weapon):
             self.__isShooted = True
             key = f"{self.owner.key}_Missile_{id(self)}"
 
-            o = self.owner.operation
-            assert o is not None
 
-            self.owner.operation = None
+            style = (255, 255, 255)
+            if isinstance(self.owner, Tank):
+                style = self.owner.style
 
             GlobalEvents.GameObjectAdding(
                 key,
@@ -51,16 +51,12 @@ class RemoteControlMissileWeapon(Weapon):
                     self.owner.body.position[1]
                     + self.owner.body.rotation_vector.y * BULLET_SHOOT_DIS,
                     self.owner.body.angle,
-                    (
-                        MISSILE_TYPE.RED
-                        if isinstance(self.owner, Tank) and self.owner.style is TANK_STYLE.RED
-                        else MISSILE_TYPE.GREEN
-                    ),
+                    style,
                 ),
             )
 
     def __onGameObjectAdded(self, obj: GameObject):
-        if isinstance(obj, Missile):
+        if isinstance(obj, Missile) and isinstance(self.owner,Operateable):
 
             def __onBulletRemoved(obj: GameObject):
                 assert isinstance(self.owner, Operateable)
@@ -69,7 +65,8 @@ class RemoteControlMissileWeapon(Weapon):
 
             obj.Removed += __onBulletRemoved
             self.__missile = obj
-            self.__missile.operation = obj.operation
+            self.__missile.operation = self.owner.operation
+            self.owner.operation = None
             logger.debug(f"坦克发射子弹 {self} {self.__missile}")
 
     def canFire(self) -> bool:
@@ -88,4 +85,3 @@ class RemoteControlMissileWeapon(Weapon):
     def onDropped(self):
         GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
         ...
-

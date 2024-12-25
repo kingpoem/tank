@@ -1,5 +1,6 @@
 from random import randint, choice
 from enum import Enum
+import random
 from typing import overload
 
 from pygame import Surface, draw, gfxdraw
@@ -374,6 +375,14 @@ class GameMap(GameObject):
             MARGIN_X + x * PLOT_WIDTH + PLOT_WIDTH / 2,
             MARGIN_Y + y * PLOT_HEIGHT + PLOT_HEIGHT / 2,
         )
+
+    def getRandomEmptyMapPos(self):
+        while True:
+            x = random.randint(1, self.width - 2)
+            y = random.randint(1, self.height - 2)
+            if self.__map[x, y] == MAP_PLOT_TYPE.MAP_BLOCK:
+                continue
+            return x,y
 
     # 绘制迷宫函数
     def render(self, screen: Surface):

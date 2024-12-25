@@ -22,11 +22,20 @@ from utils.easingFunc import easeLinear
 
 class Selection:
 
+    __isEnabled: bool = True
     __content: Callable[[], str] | Control
     __height: float
     __enterAction: Callable[[], None] | None
     __leftAction: Callable[[], None] | None
     __rightAction: Callable[[], None] | None
+
+    @property
+    def isEnabled(self):
+        return self.__isEnabled
+    
+    @isEnabled.setter
+    def isEnabled(self, value: bool):
+        self.__isEnabled = value
 
     @property
     def content(self):
@@ -86,6 +95,14 @@ class SelectionControl(Control):
     def ui(self):
         return self.__selectionControlUI
 
+    @property
+    def selections(self):
+        return self.__selections
+    
+    @property
+    def selectIndex(self):
+        return self.__selectIndex
+
     def __init__(
         self,
         width: float,
@@ -109,17 +126,17 @@ class SelectionControl(Control):
             if event.key == K_RETURN or event.key == K_KP_ENTER:
                 if 0 <= self.__selectIndex <= len(self.__selections):
                     select = self.__selections[self.__selectIndex]
-                    if select.enterAction is not None:
+                    if select.enterAction is not None and select.isEnabled:
                         select.enterAction()
             elif event.key == K_LEFT:
                 if 0 <= self.__selectIndex <= len(self.__selections):
                     select = self.__selections[self.__selectIndex]
-                    if select.leftAction is not None:
+                    if select.leftAction is not None and select.isEnabled:
                         select.leftAction()
             elif event.key == K_RIGHT:
                 if 0 <= self.__selectIndex <= len(self.__selections):
                     select = self.__selections[self.__selectIndex]
-                    if select.rightAction is not None:
+                    if select.rightAction is not None and select.isEnabled:
                         select.rightAction()
             elif event.key == K_UP:
                 self.__selectIndex = (self.__selectIndex - 1 + len(self.__selections)) % len(
@@ -171,7 +188,8 @@ class SelectionControl(Control):
                         select.height,
                     ),
                 )
-                
+                if not select.isEnabled:
+                    contentSurface.set_alpha(128)
                 self.__selectionControlUI.blit(contentSurface, basePoint)
                 if self.__selectIndex == i:
                     rightPoint = (basePoint[0] - 16, basePoint[1] + contentSurface.get_height() / 2)

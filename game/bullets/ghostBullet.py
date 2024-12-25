@@ -1,12 +1,13 @@
 import math
 from selectors import SelectorKey
 import numpy as np
-from pygame import Surface, draw, transform
+from pygame import Surface, draw, transform,mixer
 from pymunk import Body, Poly, Vec2d
 from game.bullets.commonBullet import BULLET_COLLISION_TYPE, CommonBullet
 from game.events.eventDelegate import EventDelegate
 from game.events.eventManager import EventManager
 from game.events.globalEvents import GlobalEvents
+from game.events.timerManager import Timer
 from game.gameObject import GameObject, GameObjectData
 from game.defines import BACKGROUND
 from game.gameSettings import GlobalSettingsManager
@@ -21,16 +22,18 @@ class GhostBullet(GameObject):
     """
     幽灵子弹
     """
-    BULLET_DISAPPEAR_TIME_MS = 5_000
-
-    BulletDisappeared: EventDelegate[GameObject]
 
     def __init__(self,key:str, data : GhostBulletData):
+        BULLET_DISAPPEAR_TIME_MS = 5_000
         super().__init__(key, data)
 
-        self.BulletDisappeared = EventDelegate[GameObject](f"{key} 幽灵子弹 消失")
-        self.BulletDisappeared.setTimer(GhostBullet.BULLET_DISAPPEAR_TIME_MS, 1, self)
-        self.BulletDisappeared += lambda obj : GlobalEvents.GameObjectRemoving(obj.key)
+        def __onButtonDisappeared():
+            if self.isExist:
+                self.__disappearSound.play()
+            GlobalEvents.GameObjectRemoving(self.key)
+
+
+        self.__bulletDisappearTimer = Timer(__onButtonDisappeared, BULLET_DISAPPEAR_TIME_MS, 1)
 
         def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             # body.velocity = body.rotation_vector * 300
@@ -62,19 +65,26 @@ class GhostBullet(GameObject):
             ],
         )
 
-        # event = EventManager.allocateEventType()
-        tempEvent = EventDelegate[None](f"{key} 幽灵子弹 延迟设置碰撞")
 
-        def __delayCollisionTypeEventHandler(_ : None):
+        def __delayEnableCollisionEventHandler():
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
             
-        tempEvent += __delayCollisionTypeEventHandler
-        tempEvent.setTimer(100, 1, None)
+        self.__delayEnableCollisionTimer = Timer(
+             __delayEnableCollisionEventHandler, 50, 1
+        )
+
+        # 音效
+        self.__disappearSound = mixer.Sound("assets/disappear.mp3")
+        self.__disappearSound.set_volume(0.1)
 
 
     def render(self, screen: Surface):
         r_s = transform.rotate(self.surface, math.degrees(-self.body.angle))
         screen.blit(r_s, r_s.get_rect(center=self.body.position))
+
+    def update(self, delta: float):
+        self.__delayEnableCollisionTimer.update(delta)
+        self.__bulletDisappearTimer.update(delta)
 
     def getData(self) -> GameObjectData:
         return GhostBulletData(self.body.position[0], self.body.position[1], self.body.angle)

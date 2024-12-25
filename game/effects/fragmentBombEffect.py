@@ -1,4 +1,4 @@
-from pygame import Surface, draw, gfxdraw
+from pygame import Surface, draw, gfxdraw,mixer
 from pymunk import Body, Circle
 from game.events.delegate import Delegate
 from game.events.globalEvents import GlobalEvents
@@ -28,6 +28,10 @@ class FragmentBombEffect(GameObject):
         self.shapes[0].sensor = True
 
         self.__effectRad : int = 0
+
+        effectSound = mixer.Sound("assets/bomb.mp3")
+        effectSound.set_volume(0.2)
+        effectSound.play()
 
     def render(self, screen: Surface):
         if self.isExist:

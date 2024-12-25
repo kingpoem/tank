@@ -26,11 +26,19 @@ from pygame import image, transform
 from game.controls.floatMenu import FloatMenu
 from game.controls.selectionControl import Selection, SelectionControl
 from game.controls.textbox import TextBox
-from game.defines import BACKGROUND, FONT_COLOR, LARGE_TITLE_FONT, SELECTION_HEIGHT, WINDOW_HEIGHT, WINDOW_WIDTH
+from game.defines import (
+    BACKGROUND,
+    FONT_COLOR,
+    LARGE_TITLE_FONT,
+    SELECTION_HEIGHT,
+    WINDOW_HEIGHT,
+    WINDOW_WIDTH,
+)
 from game.events.eventManager import EventManager
 
 from game.gameSettings import GlobalSettingsManager
-from game.sceneManager import SCENE_TYPE, SceneManager
+
+from game.scenes.gameScene import GameSceneConfig
 from game.scenes.scene import Scene
 from game.spaces.gameObjectSpace import GAMEOBJECT_SPACE_TYPE, GameObjectSpace
 from online.onlineManager import OnlineManager
@@ -45,10 +53,6 @@ class StartScene(Scene):
 
     __selectionContorl: SelectionControl
 
-    __createServerMenu: FloatMenu
-    __connectServerMenu: FloatMenu
-    __settingMenu: FloatMenu
-
     __SELECT_HEIGHT = 72
 
     @property
@@ -57,14 +61,29 @@ class StartScene(Scene):
 
     def __init__(self):
 
-        selections = [
-            Selection(lambda: "本地游戏", SELECTION_HEIGHT, self.__onLocalGameEnter),
-            Selection(lambda: "创建服务器", SELECTION_HEIGHT, self.__onCreateServerEnter),
-            Selection(lambda: "连接服务器", SELECTION_HEIGHT, self.__onConnectServerEnter),
-            Selection(lambda: "设置", SELECTION_HEIGHT, self.__onSettingEnter),
-            Selection(lambda: "退出游戏", SELECTION_HEIGHT, self.__onExitGameEnter),
-        ]
+        def __onLocalGameEnter():
+            self.__startGameMenu.show()
+            # SceneManager.changeScene(SCENE_TYPE.GAME_SCENE)
 
+        def __onCreateServerEnter():
+            self.__createServerMenu.show()
+
+        def __onConnectServerEnter():
+            self.__connectServerMenu.show()
+
+        def __onSettingEnter():
+            self.__settingMenu.show()
+
+        def __onExitGameEnter():
+            EventManager.raiseEventType(pygame.QUIT)
+
+        selections = [
+            Selection(lambda: "本地游戏", SELECTION_HEIGHT, __onLocalGameEnter),
+            Selection(lambda: "创建服务器", SELECTION_HEIGHT, __onCreateServerEnter),
+            Selection(lambda: "连接服务器", SELECTION_HEIGHT, __onConnectServerEnter),
+            Selection(lambda: "设置", SELECTION_HEIGHT, __onSettingEnter),
+            Selection(lambda: "退出游戏", SELECTION_HEIGHT, __onExitGameEnter),
+        ]
         self.__ui = Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
 
         img = image.load("assets/background.png").convert_alpha()
@@ -77,6 +96,51 @@ class StartScene(Scene):
             StartScene.__SELECT_HEIGHT * len(selections) + 108,
             selections,
         )
+
+        self.__initStartGameMenu()
+        self.__initSettingMenu()
+        self.__initCreaterServerMenu()
+        self.__initConnectServerMenu()
+
+        logger.success("主菜单场景初始化完成")
+
+    def __initStartGameMenu(self):
+        from game.sceneManager import SCENE_TYPE, SceneManager
+
+        self.__startGameMenu = FloatMenu(
+            self.__ui,
+            1280,
+            960,
+            SelectionControl(
+                1280,
+                960,
+                [
+                    Selection(
+                        lambda: "玩家 vs 玩家",
+                        SELECTION_HEIGHT,
+                        lambda: SceneManager.changeScene(
+                            SCENE_TYPE.GAME_SCENE, True, GameSceneConfig(2, 0)
+                        ),
+                    ),
+                    Selection(
+                        lambda: "玩家 vs AI",
+                        SELECTION_HEIGHT,
+                        lambda: SceneManager.changeScene(
+                            SCENE_TYPE.GAME_SCENE, True, GameSceneConfig(1, 1)
+                        ),
+                    ),
+                    Selection(
+                        lambda: "玩家 vs 玩家 vs AI",
+                        SELECTION_HEIGHT,
+                        lambda: SceneManager.changeScene(
+                            SCENE_TYPE.GAME_SCENE, True, GameSceneConfig(2, 1)
+                        ),
+                    ),
+                ],
+            ),
+        )
+
+    def __initSettingMenu(self):
 
         def __downTankSpeed():
             GlobalSettingsManager.getGameSettings().tankSpeed = max(
@@ -186,17 +250,17 @@ class StartScene(Scene):
             ),
         )
 
+    def __initCreaterServerMenu(self):
         portTextBox = TextBox("port", "8900")
 
         def __createServer():
             try:
-                host = '0.0.0.0'
+                host = "0.0.0.0"
                 port = int(portTextBox.text)
                 OnlineManager.createServer(host, port)
             except Exception as e:
                 logger.exception(e)
                 return
-            
 
         self.__createServerMenu = FloatMenu(
             self.__ui,
@@ -211,12 +275,15 @@ class StartScene(Scene):
                 ],
             ),
         )
-        hostTextBox2 = TextBox("host")
-        portTextBox2 = TextBox("port", "8900")
+
+    def __initConnectServerMenu(self):
+        hostTextBox = TextBox("host")
+        portTextBox = TextBox("port", "8900")
+
         def __connectServer():
             try:
-                host = hostTextBox2.text
-                port = int(portTextBox2.text)
+                host = hostTextBox.text
+                port = int(portTextBox.text)
                 OnlineManager.connectServer(host, port)
             except Exception as e:
                 logger.exception(e)
@@ -230,16 +297,17 @@ class StartScene(Scene):
                 1280,
                 960,
                 [
-                    Selection(hostTextBox2, SELECTION_HEIGHT),
-                    Selection(portTextBox2, SELECTION_HEIGHT),
+                    Selection(hostTextBox, SELECTION_HEIGHT),
+                    Selection(portTextBox, SELECTION_HEIGHT),
                     Selection(lambda: "连接服务器", SELECTION_HEIGHT, __connectServer),
                 ],
             ),
         )
 
-        logger.success("主菜单场景初始化完成")
-
     def process(self, event: Event):
+        if self.__startGameMenu.isMenuShow:
+            self.__startGameMenu.process(event)
+            return
         if self.__settingMenu.isMenuShow:
             self.__settingMenu.process(event)
             return
@@ -273,25 +341,7 @@ class StartScene(Scene):
         )
 
     def __updateMenus(self, delta: float):
+        self.__startGameMenu.update(delta)
         self.__settingMenu.update(delta)
         self.__createServerMenu.update(delta)
         self.__connectServerMenu.update(delta)
-
-    def __onLocalGameEnter(self):
-        SceneManager.changeScene(SCENE_TYPE.GAME_SCENE)
-
-    def __onCreateServerEnter(self):
-        # from online.onlineManager import OnlineManager
-
-        # OnlineManager.createServer("127.0.0.1", 8900)
-        # logger.debug("创建服务器")
-        self.__createServerMenu.show()
-
-    def __onConnectServerEnter(self):
-        self.__connectServerMenu.show()
-
-    def __onSettingEnter(self):
-        self.__settingMenu.show()
-
-    def __onExitGameEnter(self):
-        EventManager.raiseEventType(pygame.QUIT)

@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
 import math
-from random import randint
 import random
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Literal, Sequence
 from loguru import logger
 from pygame import K_DOWN, K_ESCAPE, KEYDOWN, KEYUP, QUIT, Rect, Surface
 import pygame
@@ -28,10 +27,10 @@ from game.defines import (
 )
 from game.events.eventDelegate import EventDelegate
 from game.events.globalEvents import GlobalEvents
+from game.events.timerManager import TimerManager
 from game.gameObject import GameObject, GameObjectData, GameObjectFactory
 from game.keyPressedManager import ONLINE
 from game.operateable import Operateable, Operation
-from game.sceneManager import SCENE_TYPE, SceneManager
 from game.spaces.gameObjectSpace import GAMEOBJECT_SPACE_TYPE, GameObjectSpace
 from game.events.eventManager import EventManager
 from game.gameItemManager import GameItemManager
@@ -55,6 +54,12 @@ from online.onlineManager import OnlineManager
 
 
 SCORE_UI_HEIGHT = 192
+
+
+class GameSceneConfig:
+    def __init__(self, playerNum: Literal[1, 2], aiNum: Literal[0, 1]):
+        self.playerNum = playerNum
+        self.aiNum = aiNum
 
 
 class GameScene(Scene):
@@ -117,12 +122,14 @@ class GameScene(Scene):
     def gameItemManager(self):
         return self.__gameItemManager
 
-    def __init__(self):
+    def __init__(self, config: GameSceneConfig):
         logger.info("游戏场景初始化")
 
         self.GameLoaded = EventDelegate[None]("游戏加载完毕")
         self.GameOvered = EventDelegate[None]("本轮游戏结束")
 
+        self.__config = config
+        self.__timerManager = TimerManager()
         self.__gameObjectSpace = GameObjectSpace()
         self.registerEvents()
 
@@ -134,6 +141,12 @@ class GameScene(Scene):
         )
         self.__scoreUI = pygame.Surface((WINDOW_WIDTH, SCORE_UI_HEIGHT))
         self.__ui = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+        def __backToStart():
+            from ..sceneManager import SceneManager, SCENE_TYPE
+
+            SceneManager.changeScene(SCENE_TYPE.START_SCENE)
+
         self.__gameMenu = FloatMenu(
             self.__ui,
             1080,
@@ -145,7 +158,7 @@ class GameScene(Scene):
                     Selection(
                         lambda: "返回主菜单",
                         SELECTION_HEIGHT,
-                        lambda: SceneManager.changeScene(SCENE_TYPE.START_SCENE),
+                        __backToStart,
                     ),
                     Selection(
                         lambda: "退出游戏",
@@ -155,6 +168,7 @@ class GameScene(Scene):
                 ],
             ),
         )
+
         gameMapData = self.generateMapData()
         GlobalEvents.GameObjectAdding("GameMap", gameMapData)
 
@@ -184,7 +198,7 @@ class GameScene(Scene):
         if self.__gameItemManager is not None:
             self.__gameItemManager.reset(self.__gameMap)
         else:
-            self.__gameItemManager = GameItemManager(self.__gameMap, self.__gameObjectSpace)
+            self.__gameItemManager = GameItemManager(self.__gameMap, self.__timerManager)
         if self.gameObjectSpace is not None:
             self.gameObjectSpace.spaceRegion = Rect(
                 0, 0, self.__gameMap.surface.get_width(), self.__gameMap.surface.get_height()
@@ -197,7 +211,6 @@ class GameScene(Scene):
             )
         GlobalEvents.GameObjectAdding("RedTank", tankDatas[0])
         GlobalEvents.GameObjectAdding("GreenTank", tankDatas[1])
-
 
     def __onGameObjectAdding(self, key: str, data: GameObjectData):
         self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
@@ -240,33 +253,43 @@ class GameScene(Scene):
 
     def generateMapData(self) -> GameMapData:
         # 地图初始化
-        width = randint(MAP_MIN_WIDTH // 2, MAP_MAX_WIDTH // 2) * 2 + 1
-        height = randint(MAP_MIN_HEIGHT // 2, MAP_MAX_HEIGHT // 2) * 2 + 1
+        width = random.randint(MAP_MIN_WIDTH // 2, MAP_MAX_WIDTH // 2) * 2 + 1
+        height = random.randint(MAP_MIN_HEIGHT // 2, MAP_MAX_HEIGHT // 2) * 2 + 1
         return GameMapData(width, height)
 
     def generateTankDatas(self) -> Sequence[TankData]:
         # 坦克初始化
 
-        return (
+        tankDatas = list[TankData]()
+
+        mapX,mapY = self.gameMap.getRandomEmptyMapPos()
+
+        tankDatas.append(
             TankData(
-                self.gameMap.getPlotPos(1, 1)[0] + random.uniform(-5, 5),
-                self.gameMap.getPlotPos(1, 1)[1] + random.uniform(-5, 5),
+                self.gameMap.getPlotPos(mapX, mapY)[0] + random.uniform(-5, 5),
+                self.gameMap.getPlotPos(mapX, mapY)[1] + random.uniform(-5, 5),
                 random.uniform(0, math.pi),
-                TANK_STYLE.RED,
+                TANK_STYLE.RED.value,
                 Operation(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g),
                 WEAPON_TYPE.FRAGMENTBOMB_WEAPON,
-            ),
-            TankData(
-                self.gameMap.getPlotPos(self.gameMap.width - 2, self.gameMap.height - 2)[0]
-                + random.uniform(-5, 5),
-                self.gameMap.getPlotPos(self.gameMap.width - 2, self.gameMap.height - 2)[1]
-                + random.uniform(-5, 5),
-                random.uniform(0, math.pi),
-                TANK_STYLE.GREEN,
-                Operation(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0),
-                WEAPON_TYPE.COMMON_WEAPON,
-            ),
+            )
         )
+        if self.__config.playerNum == 2:
+            mapX,mapY = self.gameMap.getRandomEmptyMapPos()
+            tankDatas.append(
+                TankData(
+                    self.gameMap.getPlotPos(mapX, mapY)[0] + random.uniform(-5, 5),
+                    self.gameMap.getPlotPos(mapX, mapY)[1] + random.uniform(-5, 5),
+                    random.uniform(0, math.pi),
+                    TANK_STYLE.GREEN.value,
+                    Operation(
+                        pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0
+                    ),
+                    WEAPON_TYPE.COMMON_WEAPON,
+                )
+            )
+
+        return tankDatas
 
     def process(self, event: Event):
         if self.__gameMenu.isMenuShow:
@@ -282,6 +305,7 @@ class GameScene(Scene):
     def update(self, delta: float):
         if self.__gameMenu.isMenuShow is False:
             self.__gameObjectSpace.updateObjects(delta)
+            self.__timerManager.updateTimers(delta)
             self.__trySendSceneData()
 
         # 更新画面
@@ -360,7 +384,6 @@ class GameScene(Scene):
         if self.gameItemManager is not None:
             self.gameItemManager.cancelGenerate()
 
-
     def __trySendSceneData(self):
         if OnlineManager.isConnected() and OnlineManager.isServer():
             datas = dict[str, GameObjectData]()
@@ -399,4 +422,4 @@ class GameScene(Scene):
         if self.__isGameOver:
             return
         self.__isGameOver = True
-        self.GameOvered.setTimer(3000, 1, None)
+        self.__timerManager.setTimer(self.GameOvered.createTimer(3000, 1, None))

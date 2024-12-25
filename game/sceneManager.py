@@ -3,6 +3,7 @@ from typing import Any
 
 from loguru import logger
 
+
 from .scenes.scene import Scene
 
 
@@ -32,6 +33,7 @@ class SceneManager:
     @staticmethod
     def getCurrentScene():
         return SceneManager.__sceneList[SceneManager.__currentSceneType]
+
 
     @staticmethod
     def changeScene(sceneType: SCENE_TYPE, delOtherScene: bool = True, *args: Any, **kwargs: Any):

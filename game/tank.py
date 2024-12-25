@@ -3,7 +3,7 @@ import math
 from typing import Any
 from loguru import logger
 from numpy import isin
-from pygame import Surface, image, transform, draw, gfxdraw,mixer
+from pygame import BLEND_RGBA_MULT, Surface, image, transform, draw, gfxdraw, mixer
 from pymunk import Arbiter, Body, CollisionHandler, Shape, Space, Poly
 
 from game.bullets.commonBullet import CommonBullet, BULLET_COLLISION_TYPE
@@ -25,8 +25,8 @@ TANK_REMOVED_EVENT_TYPE = EventManager.allocateEventType()
 
 
 class TANK_STYLE(Enum):
-    RED = "red"
-    GREEN = "green"
+    RED = (255,0,0)
+    GREEN = (32,172,56)
 
 
 class TankData(GameObjectData):
@@ -35,7 +35,7 @@ class TankData(GameObjectData):
         x: float,
         y: float,
         angle: float,
-        style: TANK_STYLE,
+        style: tuple[int,int,int],
         operation: Operation | None = None,
         weaponType: WEAPON_TYPE | None = None,
     ):
@@ -60,7 +60,6 @@ class Tank(GameObject, Operateable):
     __collisionHandler: CollisionHandler | None = None
 
     __weapon: Weapon | None = None
-    __style: TANK_STYLE
 
     @property
     def weapon(self):
@@ -73,10 +72,11 @@ class Tank(GameObject, Operateable):
     @weapon.setter
     def weapon(self, weapon: Weapon):
         from .weapons.commonWeapon import CommonWeapon
+
         if self.__weapon is not None:
             self.__weapon.onDropped()
         self.__weapon = weapon
-        if not isinstance(self.__weapon,CommonWeapon):
+        if not isinstance(self.__weapon, CommonWeapon):
             self.__onEquippedSound.play()
         self.__weapon.onPicked()
         self.refreshTankStyle()
@@ -84,9 +84,9 @@ class Tank(GameObject, Operateable):
     @property
     def style(self):
         return self.__style
-    
+
     @style.setter
-    def style(self, style: TANK_STYLE):
+    def style(self, style: tuple[int,int,int]):
         self.__style = style
         self.refreshTankStyle()
 
@@ -104,6 +104,9 @@ class Tank(GameObject, Operateable):
 
         self.__onEquippedSound = mixer.Sound("assets/tank_equipped.mp3")
         self.__onEquippedSound.set_volume(0.2)
+
+        self.__tankDestorySound = mixer.Sound("assets/tank_destory.mp3")
+        self.__tankDestorySound.set_volume(0.2)
 
         self.style = data.style
 
@@ -163,10 +166,6 @@ class Tank(GameObject, Operateable):
             shape.collision_type = TANK_COLLISION_TYPE
             shape.friction = 1
 
-        
-
-        
-
     def render(self, screen: Surface):
         # 旋转图片 pymunk和pygame旋转方向相反
         r_img = transform.rotate(self.surface, math.degrees(-self.body.angle))
@@ -200,18 +199,21 @@ class Tank(GameObject, Operateable):
         from game.weapons.remoteControlMissileWeapon import RemoteControlMissileWeapon
         from game.weapons.fragmentBombWeapon import FragmentBombWeapon
 
-        lookPath = f"assets/{self.style.value}_tank.png"
+        lookPath = f"assets/tank.png"
         if self.weapon.canUse():
             if isinstance(self.weapon, RemoteControlMissileWeapon):
-                lookPath = f"assets/{self.style.value}_tank_with_missile.png"
+                lookPath = f"assets/tank_with_missile.png"
             elif isinstance(self.weapon, GhostWeapon):
-                lookPath = f"assets/{self.style.value}_tank_with_ghost.png"
+                lookPath = f"assets/tank_with_ghost.png"
             elif isinstance(self.weapon, FragmentBombWeapon):
-                lookPath = f"assets/{self.style.value}_tank_with_bomb.png"
+                lookPath = f"assets/tank_with_bomb.png"
         # elif isinstance(weapon)
 
         img = image.load(lookPath).convert_alpha()
         self.surface = transform.smoothscale_by(img, Tank.TANK_WIDTH / img.get_width())
+        filterSurface = Surface(self.surface.get_size())
+        filterSurface.fill(self.style)
+        self.surface.blit(filterSurface, (0, 0), special_flags=BLEND_RGBA_MULT)
 
     @staticmethod
     def __onBulletCollision(arbiter: Arbiter, space: Space, data: dict[Any, Any]):
@@ -226,6 +228,8 @@ class Tank(GameObject, Operateable):
                 GlobalEvents.GameObjectRemoving(bullet.key)
             if tank is not None:
                 GlobalEvents.GameObjectRemoving(tank.key)
+                if isinstance(tank, Tank):
+                    tank.__tankDestorySound.play()
             logger.debug(f"坦克被子弹击中 {tank} {bullet}")
 
     def onForward(self, delta: float):
@@ -274,4 +278,3 @@ class Tank(GameObject, Operateable):
         self.operation = data.operation
         if data.weaponType is not None:
             self.weapon = WeaponFactory.createWeapon(self, data.weaponType)
-            

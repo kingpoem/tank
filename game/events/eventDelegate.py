@@ -5,6 +5,7 @@ from loguru import logger
 from pygame.event import Event
 
 from game.events.delegate import Delegate
+from game.events.timerManager import Timer
 from online.onlineData import EventData
 from .eventManager import EventManager
 
@@ -42,16 +43,17 @@ class EventDelegate[*Args](Delegate[*Args]):
         if self.__sendToOnline and OnlineManager.isConnected() and OnlineManager.isServer():
             OnlineManager.sendData(self.getEventData(*args))
 
-    def setTimer(self, timeMs: int, loops: int = 0, *args: *Args):
-        EventManager.setTimer(Event(self.__eventType, args=args), timeMs, loops)
-        logger.debug(f"事件委托 设置定时器 {self.info} 间隔{timeMs}毫秒 循环{loops}次")
 
-    def cancelTimer(self):
-        EventManager.cancelTimer(self.__eventType)
-        logger.debug(f"事件委托 取消定时器 {self.info}")
+    # def setTimer(self, timeMs: int, loops: int = 0, *args: *Args):
+    #     EventManager.setTimer(Event(self.__eventType, args=args), timeMs, loops)
+    #     logger.debug(f"事件委托 设置定时器 {self.info} 间隔{timeMs}毫秒 循环{loops}次")
+
+    # def cancelTimer(self):
+    #     EventManager.cancelTimer(self.__eventType)
+    #     logger.debug(f"事件委托 取消定时器 {self.info}")
 
     def clear(self):
-        self.cancelTimer()
+        # self.cancelTimer()
         return super().clear()
 
     def getEventData(self, *args: *Args):

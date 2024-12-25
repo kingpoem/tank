@@ -1,9 +1,10 @@
-from pygame import Surface, draw
+from pygame import Surface, draw,mixer
 from pymunk import Body, Circle, Shape
 from game.bullets.commonBullet import BULLET_COLLISION_TYPE, CommonBullet
 from game.events.eventDelegate import EventDelegate
 from game.events.eventManager import EventManager
 from game.events.globalEvents import GlobalEvents
+from game.events.timerManager import Timer
 from game.gameObject import GameObject, GameObjectData
 from game.gameSettings import GlobalSettingsManager
 
@@ -19,16 +20,18 @@ class FragmentBomb(GameObject):
     """
     破片炮弹
     """
-    BULLET_DISAPPEAR_TIME_MS = 8_000
-
-    BulletDisappeared: EventDelegate[GameObject]
 
     def __init__(self,key : str, data : FragmentBombData):
+        BULLET_DISAPPEAR_TIME_MS = 8_000
         super().__init__(key, data)
 
-        self.BulletDisappeared = EventDelegate[GameObject](f"{key} 破片炮弹 消失")
-        self.BulletDisappeared.setTimer(FragmentBomb.BULLET_DISAPPEAR_TIME_MS, 1, self)
-        self.BulletDisappeared += lambda obj : GlobalEvents.GameObjectRemoving(obj.key)
+        def __onButtonDisappeared():
+            if self.isExist:
+                self.__disappearSound.play()
+            GlobalEvents.GameObjectRemoving(self.key)
+
+
+        self.__bulletDisappearTimer = Timer(__onButtonDisappeared, BULLET_DISAPPEAR_TIME_MS, 1)
 
         def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             body.update_velocity(body, (0, 0), 1, dt)
@@ -54,19 +57,28 @@ class FragmentBomb(GameObject):
         self.shapes[0].elasticity = 1
         # self.shapes[0].sensor = True
         # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-        tempEvent = EventDelegate[None](f"{key} 破片炮弹 延迟设置碰撞")
 
-        def __delayEnableCollisionEventHandler(_ : None):
+
+        def __delayEnableCollisionEventHandler():
             # self.shapes[0].sensor = False
             self.shapes[0].collision_type = BULLET_COLLISION_TYPE
 
-        tempEvent += __delayEnableCollisionEventHandler
-        tempEvent.setTimer(100, 1, None)
+        self.__delayEnableCollisionTimer = Timer(
+             __delayEnableCollisionEventHandler, 50, 1
+        )
+
+        # 音效
+        self.__disappearSound = mixer.Sound("assets/disappear.mp3")
+        self.__disappearSound.set_volume(0.1)
 
 
     def render(self, screen: Surface):
         if self.body.space:
             draw.circle(screen, (0, 0, 0), self.body.position, 8)
+
+    def update(self, delta: float):
+        self.__delayEnableCollisionTimer.update(delta)
+        self.__bulletDisappearTimer.update(delta)
 
     def getData(self) -> GameObjectData:
         return FragmentBombData(self.body.position[0], self.body.position[1], self.body.angle)

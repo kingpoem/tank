@@ -3,7 +3,9 @@ from typing import Callable, final
 from loguru import logger
 from pygame.event import Event
 
+from game.events.delegate import Delegate
 from game.events.eventDelegate import EventDelegate
+from game.events.timerManager import Timer, TimerManager
 from online.onlineManager import OnlineManager
 
 from .events.globalEvents import GlobalEvents
@@ -34,14 +36,15 @@ class GameItemManager:
     def gameItems(self):
         return self.__gameItems
 
-    def __init__(self, gameMap: GameMap, gameObjectSpace: GameObjectSpace):
+    def __init__(self, gameMap: GameMap,timerManager : TimerManager):
         self.__gameMap = gameMap
-        self.__gameObjectSpace = gameObjectSpace
+        self.__timerManager = timerManager
         self.__gameItems: list[GameItem] = []
         self.__gameItemCount: int = 0
-        self.__isStarted : bool = False
+        self.__isStarted: bool = False
+        self.__genTimer: Timer | None = None
 
-        self.GameItemGenerated = EventDelegate[GameObjectData](f"游戏物品生成")
+        self.GameItemGenerated = Delegate[GameObjectData](f"游戏物品生成")
         self.GameItemGenerated += self.__onGameItemGenerated
 
     def startGenerate(self):
@@ -49,26 +52,32 @@ class GameItemManager:
             return
         self.__isStarted = True
         GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
-        self.GameItemGenerated.setTimer(10000, 1, self.__generateRandomItemData())
+        self.__genTimer = self.GameItemGenerated.createTimer(
+            5000, 1, self.__generateRandomItemData()
+        )
+        self.__timerManager.setTimer(self.__genTimer)
 
     def cancelGenerate(self):
         self.__isStarted = False
         GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
-        self.GameItemGenerated.cancelTimer()
+        if self.__genTimer is not None:
+            self.__genTimer.cancel()
+            self.__genTimer = None
 
     def __onGameItemGenerated(self, data: GameObjectData):
         GlobalEvents.GameObjectAdding(f"GameItem_{self.__gameItemCount}", data)
         self.__gameItemCount += 1
-    
-    def __onGameObjectAdded(self,obj : GameObject):
+
+    def __onGameObjectAdded(self, obj: GameObject):
         if isinstance(obj, GameItem):
             if OnlineManager.isConnected() and OnlineManager.isClient():
                 return
             self.__gameItems.append(obj)
             obj.Removed += self.__onGameItemRemoved
-            self.GameItemGenerated.setTimer(
-                10000 + len(self.__gameItems) * 5000, 1, self.__generateRandomItemData()
+            self.__genTimer = self.GameItemGenerated.createTimer(
+                5000 + len(self.__gameItems) * 5000, 1, self.__generateRandomItemData()
             )
+            self.__timerManager.setTimer(self.__genTimer)
 
     def __generateRandomItemData(self) -> GameObjectData:
         # 生成不会重复，且不在墙面上的物品位置
