@@ -1,21 +1,16 @@
-from enum import Enum
 
 import math
 from loguru import logger
 from pymunk import Body, Poly
 
 from game.events.timerManager import Timer
-from .commonBullet import BULLET_COLLISION_TYPE, CommonBullet
+from .commonBullet import BULLET_COLLISION_TYPE
 from ..events.eventDelegate import EventDelegate
-from ..events.eventManager import EventManager
-from pygame import BLEND_RGBA_MULT, Surface, draw, transform, image, mixer
-from pygame.sprite import _Group, Sprite
+from pygame import BLEND_RGBA_MULT, Surface, transform, image, mixer
 from ..events.globalEvents import GlobalEvents
 from ..gameObject import GameObject, GameObjectData
 from ..gameSettings import GlobalSettingsManager
 from ..operateable import Operateable
-from ..sceneManager import SceneManager
-from pygame.event import Event
 
 
 
