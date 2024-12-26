@@ -45,8 +45,7 @@ class GameLoop:
         pygame.mixer.init()
 
         # 初始化游戏屏幕
-        GameLoop.screen = pygame.display.set_mode((1280, 960), pygame.RESIZABLE)
-
+        GameLoop.screen = pygame.display.set_mode((1280, 960), pygame.DOUBLEBUF | pygame.HWSURFACE)
         # 初始化场景
         SceneManager.init()
 
@@ -114,7 +113,11 @@ class GameLoop:
             SMALL_FONT.render_to(
                 GameLoop.screen, (0, 24), f"delta: {GameLoop.delta * 1000:.1f}ms", FONT_COLOR
             )
+                    
+
             pygame.display.flip()
+
+
             clock.tick(FPS)
 
         pygame.quit()

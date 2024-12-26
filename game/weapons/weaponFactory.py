@@ -7,7 +7,7 @@ class WEAPON_TYPE(Enum):
     COMMON_WEAPON = 0
     GHOST_WEAPON = 1
     MISSILE_WEAPON = 2
-    FRAGMENTBOMB_WEAPON = 3
+    EXPLOSIVEBOMB_WEAPON = 3
 
 
 class WeaponFactory:

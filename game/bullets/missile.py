@@ -9,7 +9,7 @@ from .commonBullet import BULLET_COLLISION_TYPE, CommonBullet
 from ..events.eventDelegate import EventDelegate
 from ..events.eventManager import EventManager
 from pygame import BLEND_RGBA_MULT, Surface, draw, transform, image, mixer
-
+from pygame.sprite import _Group, Sprite
 from ..events.globalEvents import GlobalEvents
 from ..gameObject import GameObject, GameObjectData
 from ..gameSettings import GlobalSettingsManager
@@ -110,7 +110,6 @@ class Missile(GameObject, Operateable):
         self.body.angular_velocity = 300 * delta
 
     def onShoot(self, delta: float, isFirstShoot: bool):
-
         if isFirstShoot:
             GlobalEvents.GameObjectRemoving(self.key)
             logger.debug(f"导弹主动销毁 {self}")

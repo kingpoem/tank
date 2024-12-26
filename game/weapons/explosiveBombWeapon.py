@@ -33,7 +33,7 @@ class ExplosiveBombWeapon(Weapon):
         self.__isShooted = True
 
         GlobalEvents.GameObjectAdding(
-            f"{self.owner.key}_FragmentBomb_{id(self)}",
+            f"{self.owner.key}_ExplosiveBomb_{id(self)}",
             ExplosiveBombData(
                 self.owner.body.position[0] + self.owner.body.rotation_vector[0] * BULLET_SHOOT_DIS,
                 self.owner.body.position[1] + self.owner.body.rotation_vector[1] * BULLET_SHOOT_DIS,
@@ -43,6 +43,7 @@ class ExplosiveBombWeapon(Weapon):
 
     def __onGameObjectAdded(self, obj: GameObject):
         if isinstance(obj, ExplosiveBomb):
+            GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
             self.__bomb = obj
             self.__bomb.Removed += self.__onBombRemoved
             logger.debug(f"坦克发射子弹 {self} {self.__bomb}")
@@ -64,4 +65,4 @@ class ExplosiveBombWeapon(Weapon):
         GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
 
     def onDropped(self):
-        GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
+        ...

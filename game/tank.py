@@ -242,20 +242,20 @@ class Tank(GameObject, Operateable):
         # 而且力会在物理世界刷新后消失
         # 所以要使获得速度一致，而帧间隔缩小，力就要增大
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * tankSpeed * 5000 / delta, self.body.position
+            self.body.rotation_vector * tankSpeed * 6000 / delta, self.body.position
         )
 
     def onBack(self, delta: float):
         tankSpeed = GlobalSettingsManager.getGameSettings().tankSpeed
         self.body.apply_force_at_world_point(
-            self.body.rotation_vector * -tankSpeed * 5000 / delta, self.body.position
+            self.body.rotation_vector * -tankSpeed * 6000 / delta, self.body.position
         )
 
     def onLeft(self, delta: float):
-        self.body.angular_velocity = -2400 * delta
+        self.body.angular_velocity = -28
 
     def onRight(self, delta: float):
-        self.body.angular_velocity = 2400 * delta
+        self.body.angular_velocity = 28
 
     def onShoot(self, delta: float, isFirstShoot: bool):
         from game.scenes.gameScene import GameScene
