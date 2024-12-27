@@ -5,6 +5,10 @@ import pygame
 from pygame import Surface, transform
 
 
+
+# from game.defines import WINDOW_HEIGHT, WINDOW_WIDTH
+
+
 from .events.eventManager import EventManager
 from .keyPressedManager import KeyPressedManager
 from .sceneManager import SceneManager
@@ -45,7 +49,10 @@ class GameLoop:
         pygame.mixer.init()
 
         # 初始化游戏屏幕
-        GameLoop.screen = pygame.display.set_mode((1280, 960), pygame.DOUBLEBUF | pygame.HWSURFACE)
+        from game.defines import WINDOW_HEIGHT, WINDOW_WIDTH
+        GameLoop.screen = pygame.display.set_mode(
+            (WINDOW_WIDTH, WINDOW_HEIGHT), pygame.DOUBLEBUF | pygame.HWSURFACE
+        )
         # 初始化场景
         SceneManager.init()
 
@@ -53,7 +60,8 @@ class GameLoop:
 
         GameLoop.__debugOptions = DrawOptions(GameLoop.screen)
 
-        import game.defines
+        logger.success("游戏初始化完毕")
+
 
     @staticmethod
     def run():
@@ -93,13 +101,15 @@ class GameLoop:
             SceneManager.getCurrentScene().update(GameLoop.delta)
 
             GameLoop.screen.fill(BACKGROUND)
-            widthScale = GameLoop.screen.get_width() / SceneManager.getCurrentScene().ui.get_width()
-            heightScale = (
-                GameLoop.screen.get_height() / SceneManager.getCurrentScene().ui.get_height()
-            )
-            scaled = transform.smoothscale_by(
-                SceneManager.getCurrentScene().ui, min(widthScale, heightScale)
-            )
+            # 缩放对性能影响太大了
+            # widthScale = GameLoop.screen.get_width() / SceneManager.getCurrentScene().ui.get_width()
+            # heightScale = (
+            #     GameLoop.screen.get_height() / SceneManager.getCurrentScene().ui.get_height()
+            # )
+            # scaled = transform.smoothscale_by(
+            #     SceneManager.getCurrentScene().ui, min(widthScale, heightScale)
+            # )
+            scaled = SceneManager.getCurrentScene().ui
             GameLoop.screen.blit(scaled, scaled.get_rect(center=GameLoop.screen.get_rect().center))
             SceneManager.getCurrentScene().render(GameLoop.screen)
 
@@ -113,10 +123,8 @@ class GameLoop:
             SMALL_FONT.render_to(
                 GameLoop.screen, (0, 24), f"delta: {GameLoop.delta * 1000:.1f}ms", FONT_COLOR
             )
-                    
 
-            pygame.display.flip()
-
+            pygame.display.update()
 
             clock.tick(FPS)
 

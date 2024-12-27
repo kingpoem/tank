@@ -85,7 +85,6 @@ class FloatMenu(Control):
             ),
         )
 
-    def render(self, screen: Surface): ...
 
     def show(self):
         self.__isMenuShow = True

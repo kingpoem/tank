@@ -19,10 +19,4 @@ class Control():
         更新控件
         """
         ...
-    @abstractmethod
-    def render(self, screen: Surface):
-        """
-        渲染控件
-        """
-        ...
 

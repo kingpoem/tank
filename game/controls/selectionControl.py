@@ -149,6 +149,7 @@ class SelectionControl(Control):
 
         nowTop : float = 96
         for i, select in enumerate(self.__selections):
+
             if self.__selectIndex == i:
                 self.__selectionScale[i] = easeLinear(
                     16 * delta, self.__selectionScale[i], 1 + 0.02, 1
@@ -191,6 +192,9 @@ class SelectionControl(Control):
                 if not select.isEnabled:
                     contentSurface.set_alpha(128)
                 self.__selectionControlUI.blit(contentSurface, basePoint)
+
+                # 绘制选中三角形
+
                 if self.__selectIndex == i:
                     rightPoint = (basePoint[0] - 16, basePoint[1] + contentSurface.get_height() / 2)
                     upPoint = (
@@ -206,7 +210,6 @@ class SelectionControl(Control):
                     )
             nowTop += select.height
 
-    def render(self, screen: Surface): ...
 
 
 # TODO 实现能滚动的选择控件

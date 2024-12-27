@@ -28,6 +28,8 @@ from game.controls.selectionControl import Selection, SelectionControl
 from game.controls.textbox import TextBox
 from game.defines import (
     BACKGROUND,
+    FLOATMENU_HEIGHT,
+    FLOATMENU_WIDTH,
     FONT_COLOR,
     LARGE_TITLE_FONT,
     SELECTION_HEIGHT,
@@ -109,11 +111,11 @@ class StartScene(Scene):
 
         self.__startGameMenu = FloatMenu(
             self.__ui,
-            1280,
-            960,
+            FLOATMENU_WIDTH,
+            FLOATMENU_HEIGHT,
             SelectionControl(
-                1280,
-                960,
+                FLOATMENU_WIDTH,
+                FLOATMENU_HEIGHT,
                 [
                     Selection(
                         lambda: "玩家 vs 玩家",
@@ -194,11 +196,11 @@ class StartScene(Scene):
 
         self.__settingMenu = FloatMenu(
             self.__ui,
-            1280,
-            960,
+            FLOATMENU_WIDTH,
+            FLOATMENU_HEIGHT,
             SelectionControl(
-                1280,
-                960,
+                FLOATMENU_WIDTH,
+                FLOATMENU_HEIGHT,
                 [
                     Selection(lambda: "坦克速度与子弹速度并不等价", SELECTION_HEIGHT, lambda: None),
                     Selection(
@@ -265,8 +267,8 @@ class StartScene(Scene):
 
         self.__createServerMenu = FloatMenu(
             self.__ui,
-            1280,
-            960,
+            FLOATMENU_WIDTH,
+            FLOATMENU_HEIGHT,
             SelectionControl(
                 1280,
                 960,
@@ -300,11 +302,11 @@ class StartScene(Scene):
 
         self.__connectServerMenu = FloatMenu(
             self.ui,
-            1280,
-            960,
+            FLOATMENU_WIDTH,
+            FLOATMENU_HEIGHT,
             SelectionControl(
-                1280,
-                960,
+                FLOATMENU_WIDTH,
+                FLOATMENU_HEIGHT,
                 [
                     Selection(hostTextBox, SELECTION_HEIGHT),
                     Selection(portTextBox, SELECTION_HEIGHT),

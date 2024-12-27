@@ -18,6 +18,7 @@ from game.controls.selectionControl import Selection, SelectionControl
 from game.controls.textbox import TextBox
 from game.defines import (
     BACKGROUND,
+    FLOATMENU_WIDTH,
     FONT_COLOR,
     GENERATE_GAME_ITEM_EVENT_TYPE,
     MEDIAN_FONT,
@@ -206,10 +207,10 @@ class GameScene(Scene):
 
         self.__gameMenu = FloatMenu(
             self.__ui,
-            1080,
+            FLOATMENU_WIDTH,
             480,
             SelectionControl(
-                1080,
+                FLOATMENU_WIDTH,
                 480,
                 [
                     Selection(

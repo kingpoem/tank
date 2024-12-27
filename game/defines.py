@@ -4,6 +4,11 @@ from enum import Enum
 
 from .events.eventManager import EventManager
 
+WINDOW_WIDTH = 1440
+WINDOW_HEIGHT = 1280
+
+FLOATMENU_WIDTH = 1280
+FLOATMENU_HEIGHT = 960
 
 GENERATE_GAME_ITEM_EVENT_TYPE = EventManager.allocateEventType()
 """生成游戏物体事件"""
@@ -27,8 +32,6 @@ FONT_COLOR = (31, 31, 31)
 MENU_BACKGROUND = (192, 192, 192)
 MENU_ENV_BACKGROUND = (120, 120, 120, 100)
 
-WINDOW_WIDTH = 1440
-WINDOW_HEIGHT = 1280
 
 FONT_FAMILY = "C:\\Windows\\Fonts\\msyh.ttc"
 SMALL_FONT = Font(FONT_FAMILY,24)
