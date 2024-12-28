@@ -69,7 +69,7 @@ class Missile(GameObject, Operateable):
         self.body.velocity_func = __vec_func
 
         self.shapes = [
-            Poly.create_box(self.body, (self.surface.get_width(), self.surface.get_height()))
+            Poly.create_box(self.body, (self.surface.get_width() * 0.6, self.surface.get_height() * 0.6))
         ]
         self.shapes[0].filter = BULLET_FILTER
         self.shapes[0].collision_type = BULLET_COLLISION_TYPE

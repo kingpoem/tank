@@ -303,7 +303,7 @@ class GameScene(Scene):
                 random.uniform(0, math.pi),
                 TANK_COLOR.RED.value,
                 Operation(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g),
-                WEAPON_TYPE.EXPLOSIVEBOMB_WEAPON,
+                WEAPON_TYPE.COMMON_WEAPON,
             ),
         )
 

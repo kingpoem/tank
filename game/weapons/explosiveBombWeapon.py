@@ -28,7 +28,7 @@ class ExplosiveBombWeapon(Weapon):
 
     def fire(self):
 
-        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 6
+        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 4
         self.__isShooted = True
 
         GlobalEvents.GameObjectAdding(

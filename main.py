@@ -30,12 +30,12 @@ if __name__ == "__main__":
     __configureLogger()
     from game.gameLoop import GameLoop
     # 开始游戏循环
-    # GameLoop.run()
+    GameLoop.run()
 
-    cProfile.run('GameLoop.run()','states.prof')
+    # cProfile.run('GameLoop.run()','states.prof')
 
-    p = pstats.Stats('states.prof')
-    p.sort_stats(pstats.SortKey.TIME).print_stats(20)
+    # p = pstats.Stats('states.prof')
+    # p.sort_stats(pstats.SortKey.TIME).print_stats(20)
     
 
 

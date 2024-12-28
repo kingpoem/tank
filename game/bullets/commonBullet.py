@@ -63,19 +63,8 @@ class CommonBullet(GameObject):
         # 设置为传感器，不参与碰撞，在之后设置为 False
         # self.shapes[0].sensor = True
 
-        # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
+        self.shapes[0].collision_type = BULLET_COLLISION_TYPE
 
-        def __delayEnableCollisionEventHandler():
-            # 重新设置参与碰撞检测
-            # self.shapes[0].sensor = False
-            self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-            
-        # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-
-
-        self.__delayEnableCollisionTimer = Timer(
-            __delayEnableCollisionEventHandler, 50, 1
-        )
 
         # 音效
         self.__disappearSound = mixer.Sound("assets/disappear.mp3")
@@ -86,7 +75,6 @@ class CommonBullet(GameObject):
             draw.circle(screen, (0, 0, 0), self.body.position, 4)
 
     def update(self, delta: float):
-        self.__delayEnableCollisionTimer.update(delta)
         self.__bulletDisappearTimer.update(delta)
 
     def getData(self) -> GameObjectData:

@@ -26,8 +26,8 @@ TANK_REMOVED_EVENT_TYPE = EventManager.allocateEventType()
 
 
 class TANK_COLOR(Enum):
-    RED = (255,0,0)
-    GREEN = (32,172,56)
+    RED = (255, 0, 0)
+    GREEN = (32, 172, 56)
 
 
 class TankData(GameObjectData):
@@ -36,7 +36,7 @@ class TankData(GameObjectData):
         x: float,
         y: float,
         angle: float,
-        color: tuple[int,int,int],
+        color: tuple[int, int, int],
         operation: Operation | None = None,
         weaponType: WEAPON_TYPE | None = None,
     ):
@@ -50,12 +50,11 @@ class TankData(GameObjectData):
 
 TANK_WIDTH = 50
 
+
 class Tank(GameObject, Operateable):
     """
     坦克类
     """
-
-
 
     __collisionHandler: CollisionHandler | None = None
 
@@ -72,6 +71,7 @@ class Tank(GameObject, Operateable):
     @weapon.setter
     def weapon(self, weapon: Weapon):
         from .weapons.commonWeapon import CommonWeapon
+
         if type(weapon) is type(self.__weapon):
             return
         if self.__weapon is not None:
@@ -87,7 +87,7 @@ class Tank(GameObject, Operateable):
         return self.__color
 
     @color.setter
-    def color(self, value: tuple[int,int,int]):
+    def color(self, value: tuple[int, int, int]):
         if self.__color == value:
             return
         self.__color = value
@@ -128,58 +128,79 @@ class Tank(GameObject, Operateable):
         TANK_GUN_RATE = 0.2
 
         # 子弹实际能碰撞到的区域
-        shootShape = Poly.create_box(self.body,(TANK_WIDTH * 0.6,TANK_WIDTH * 0.3))
+        # 略微缩小一点
+        SCALE_RATE = 0.9
+        shootShape = Poly(
+            self.body,
+            [
+                (
+                    (-self.surface.get_width() / 2) * SCALE_RATE,
+                    -self.surface.get_height() / 2,
+                ),
+                (
+                    (self.surface.get_width() / 2) * TANK_BODY_RATE,
+                    -self.surface.get_height() / 2,
+                ),
+                (
+                    (self.surface.get_width() / 2) * TANK_BODY_RATE,
+                    self.surface.get_height() / 2,
+                ),
+                (
+                    (-self.surface.get_width() / 2) * SCALE_RATE,
+                    self.surface.get_height() / 2,
+                ),
+            ],
+        )
         shootShape.collision_type = TANK_COLLISION_TYPE
         shootShape.filter = TANK_CORE_FILTER
 
-        borderShape1 = Poly(
-                self.body,
-                [
-                    (-self.surface.get_width() / 2, -self.surface.get_height() / 2),
-                    (
-                        (self.surface.get_width() / 2) * TANK_BODY_RATE,
-                        -self.surface.get_height() / 2,
-                    ),
-                    (
-                        (self.surface.get_width() / 2) * TANK_BODY_RATE,
-                        self.surface.get_height() / 2,
-                    ),
-                    (-self.surface.get_width() / 2, self.surface.get_height() / 2),
-                ],
-            )
-        borderShape1.filter = TANK_BORDER_FILTER
+        # borderShape1 = Poly(
+        #     self.body,
+        #     [
+        #         (-self.surface.get_width() / 2, -self.surface.get_height() / 2),
+        #         (
+        #             (self.surface.get_width() / 2) * TANK_BODY_RATE,
+        #             -self.surface.get_height() / 2,
+        #         ),
+        #         (
+        #             (self.surface.get_width() / 2) * TANK_BODY_RATE,
+        #             self.surface.get_height() / 2,
+        #         ),
+        #         (-self.surface.get_width() / 2, self.surface.get_height() / 2),
+        #     ],
+        # )
+        # borderShape1.filter = TANK_BORDER_FILTER
         borderShape2 = Poly(
-                self.body,
-                [
-                    (
-                        0,
-                        (-self.surface.get_height() / 2) * TANK_GUN_RATE,
-                    ),
-                    (
-                        (self.surface.get_width() / 2),
-                        (-self.surface.get_height() / 2) * TANK_GUN_RATE,
-                    ),
-                    (
-                        (self.surface.get_width() / 2),
-                        (self.surface.get_height() / 2) * TANK_GUN_RATE,
-                    ),
-                    (
-                        0,
-                        (self.surface.get_height() / 2) * TANK_GUN_RATE,
-                    ),
-                ],
-            )
+            self.body,
+            [
+                (
+                    0,
+                    (-self.surface.get_height() / 2) * TANK_GUN_RATE,
+                ),
+                (
+                    (self.surface.get_width() / 2),
+                    (-self.surface.get_height() / 2) * TANK_GUN_RATE,
+                ),
+                (
+                    (self.surface.get_width() / 2),
+                    (self.surface.get_height() / 2) * TANK_GUN_RATE,
+                ),
+                (
+                    0,
+                    (self.surface.get_height() / 2) * TANK_GUN_RATE,
+                ),
+            ],
+        )
         borderShape2.filter = TANK_BORDER_FILTER
 
         self.shapes = [
-            borderShape1,
+            # borderShape1,
             borderShape2,
             shootShape
         ]
         for shape in self.shapes:
             shape.friction = 1
             shape.elasticity = 1
-
 
     def render(self, screen: Surface):
         # 旋转图片 pymunk和pygame旋转方向相反

@@ -58,16 +58,7 @@ class ExplosiveBomb(GameObject):
         self.shapes[0].elasticity = 1
         self.shapes[0].filter = BULLET_FILTER
         # self.shapes[0].sensor = True
-        # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-
-
-        def __delayEnableCollisionEventHandler():
-            # self.shapes[0].sensor = False
-            self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-
-        self.__delayEnableCollisionTimer = Timer(
-             __delayEnableCollisionEventHandler, 50, 1
-        )
+        self.shapes[0].collision_type = BULLET_COLLISION_TYPE
 
         # 音效
         self.__disappearSound = mixer.Sound("assets/disappear.mp3")
@@ -79,7 +70,6 @@ class ExplosiveBomb(GameObject):
             draw.circle(screen, (0, 0, 0), self.body.position, 8)
 
     def update(self, delta: float):
-        self.__delayEnableCollisionTimer.update(delta)
         self.__bulletDisappearTimer.update(delta)
 
     def getData(self) -> GameObjectData:

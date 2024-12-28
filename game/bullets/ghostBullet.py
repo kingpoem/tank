@@ -38,7 +38,7 @@ class GhostBullet(GameObject):
 
         def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             # body.velocity = body.rotation_vector * 300
-            body.velocity = body.velocity * (1 + GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate)
+            body.velocity = body.velocity * ((1 + GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate) ** dt)
             body.update_velocity(body, (0, 0), 1, dt)
             
 
@@ -52,6 +52,8 @@ class GhostBullet(GameObject):
         self.shapes = [Poly.create_box(self.body, (20, 4))]
         self.shapes[0].elasticity = 1
         self.shapes[0].filter = BULLET_FILTER
+        self.shapes[0].collision_type = BULLET_COLLISION_TYPE
+        # self.shapes[0].sensor = True
 
         self.surface = Surface((20, 4))
         self.surface.fill((255, 255, 255))
@@ -68,13 +70,6 @@ class GhostBullet(GameObject):
         )
 
 
-        def __delayEnableCollisionEventHandler():
-            self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-            
-        self.__delayEnableCollisionTimer = Timer(
-             __delayEnableCollisionEventHandler, 50, 1
-        )
-
         # 音效
         self.__disappearSound = mixer.Sound("assets/disappear.mp3")
         self.__disappearSound.set_volume(0.1)
@@ -85,7 +80,6 @@ class GhostBullet(GameObject):
         screen.blit(r_s, r_s.get_rect(center=self.body.position))
 
     def update(self, delta: float):
-        self.__delayEnableCollisionTimer.update(delta)
         self.__bulletDisappearTimer.update(delta)
 
     def getData(self) -> GameObjectData:

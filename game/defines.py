@@ -4,6 +4,8 @@ from enum import Enum
 
 from .events.eventManager import EventManager
 
+WINDOW_TITLE = "坦克小游戏"
+
 WINDOW_WIDTH = 1440
 WINDOW_HEIGHT = 1280
 

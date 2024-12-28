@@ -6,6 +6,7 @@ from pygame import Surface, transform
 
 
 
+
 # from game.defines import WINDOW_HEIGHT, WINDOW_WIDTH
 
 
@@ -47,14 +48,15 @@ class GameLoop:
         pygame.mixer.init()
 
         # 初始化游戏屏幕
-        from game.defines import WINDOW_HEIGHT, WINDOW_WIDTH
+        from game.defines import WINDOW_HEIGHT, WINDOW_WIDTH,WINDOW_TITLE
         GameLoop.screen = pygame.display.set_mode(
             (WINDOW_WIDTH, WINDOW_HEIGHT), pygame.DOUBLEBUF | pygame.HWSURFACE
         )
         # 初始化场景
         SceneManager.init()
 
-        pygame.display.set_caption("Tank Game")
+        pygame.display.set_caption(WINDOW_TITLE)
+        pygame.display.set_icon(pygame.image.load("assets/icon.png"))
 
         GameLoop.__debugOptions = DrawOptions(GameLoop.screen)
 

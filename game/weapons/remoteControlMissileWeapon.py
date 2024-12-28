@@ -33,7 +33,7 @@ class RemoteControlMissileWeapon(Weapon):
 
         if isinstance(self.owner, Operateable):
 
-            BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 4
+            BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 6
 
             self.__isShooted = True
             key = f"{self.owner.key}_Missile_{id(self)}"

@@ -8,7 +8,7 @@ class GameSettings:
     __tankSpeed : float = 200
     __commonBulletSpeed : float = 200
     __ghostBulletSpeed : float = 200
-    __ghostSpeedIncreaseRate : float = 0.01
+    __ghostSpeedIncreaseRate : float = 3
     __missileSpeed : float = 200
 
     @property
