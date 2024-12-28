@@ -9,8 +9,9 @@ from game.events.eventManager import EventManager
 from game.events.globalEvents import GlobalEvents
 from game.events.timerManager import Timer
 from game.gameObject import GameObject, GameObjectData
-from game.defines import BACKGROUND
+from game.defines import BACKGROUND, BULLET_FILTER
 from game.gameSettings import GlobalSettingsManager
+from game.weapons.commonWeapon import BULLET_DISAPPEAR_EVENT_TYPE
 
 class GhostBulletData(GameObjectData):
     def __init__(self,x : float,y : float,angle : float):
@@ -50,6 +51,7 @@ class GhostBullet(GameObject):
 
         self.shapes = [Poly.create_box(self.body, (20, 4))]
         self.shapes[0].elasticity = 1
+        self.shapes[0].filter = BULLET_FILTER
 
         self.surface = Surface((20, 4))
         self.surface.fill((255, 255, 255))

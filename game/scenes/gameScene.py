@@ -20,7 +20,6 @@ from game.defines import (
     BACKGROUND,
     FLOATMENU_WIDTH,
     FONT_COLOR,
-    GENERATE_GAME_ITEM_EVENT_TYPE,
     MEDIAN_FONT,
     ONLINE_KEYDOWN_EVENT_TYPE,
     ONLINE_KEYUP_EVENT_TYPE,
@@ -31,6 +30,7 @@ from game.defines import (
 from game.events.eventDelegate import EventDelegate
 from game.events.globalEvents import GlobalEvents
 from game.events.timerManager import TimerManager
+from game.gameLoop import GameLoop
 from game.gameObject import GameObject, GameObjectData, GameObjectFactory
 from game.keyPressedManager import KEY_PRESS_TYPE
 from game.operateable import Operateable, Operation
@@ -53,7 +53,10 @@ from game.scenes.scene import Scene
 from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_COLOR, Tank, TankData
 from game.weapons.weaponFactory import WEAPON_TYPE
 from online.onlineData import GameUpdateData
+from pymunk.pygame_util import DrawOptions
 
+
+SPACE_DEBUG = False
 
 SCORE_UI_HEIGHT = 192
 
@@ -131,7 +134,11 @@ class GameScene(Scene):
         self.__initGameMenu()
         self.__initGameMap()
 
+
         self.__ai: AI | None = None
+
+        if SPACE_DEBUG:
+            self.__debug = DrawOptions(self.__ui)
 
     def registerEvents(self):
         self.GameOvered += self.__onGameOvered
@@ -363,6 +370,10 @@ class GameScene(Scene):
         )
         self.updateScoreBoard(delta)
         self.__ui.blit(self.__scoreUI, (0, WINDOW_HEIGHT - self.__scoreUI.get_height()))
+        # debug
+        if SPACE_DEBUG:
+            self.gameObjectSpace.space.debug_draw(self.__debug)
+
         self.updateGameMenu(delta)
 
     def updateGameMap(self, delta: float):

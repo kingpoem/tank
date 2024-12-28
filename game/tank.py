@@ -7,6 +7,7 @@ from pygame import BLEND_RGBA_MULT, Surface, image, transform, draw, gfxdraw, mi
 from pymunk import Arbiter, Body, CollisionHandler, Shape, Space, Poly
 
 from game.bullets.commonBullet import CommonBullet, BULLET_COLLISION_TYPE
+from game.defines import TANK_BORDER_FILTER, TANK_CORE_FILTER
 from game.events.eventManager import EventManager
 from game.events.globalEvents import GlobalEvents
 from game.gameObject import GameObject, GameObjectData
@@ -47,12 +48,13 @@ class TankData(GameObjectData):
         self.weaponType = weaponType
 
 
+TANK_WIDTH = 50
+
 class Tank(GameObject, Operateable):
     """
     坦克类
     """
 
-    TANK_WIDTH = 50
 
 
     __collisionHandler: CollisionHandler | None = None
@@ -119,14 +121,18 @@ class Tank(GameObject, Operateable):
         self.body = Body(body_type=Body.DYNAMIC)
         self.body.position = (data.x, data.y)
         self.body.angle = data.angle
-        self.body.moment = 1000000
+        self.body.moment = 100000
         self.body.mass = 100
 
         TANK_BODY_RATE = 0.6
         TANK_GUN_RATE = 0.2
 
-        self.shapes = [
-            Poly(
+        # 子弹实际能碰撞到的区域
+        shootShape = Poly.create_box(self.body,(TANK_WIDTH * 0.6,TANK_WIDTH * 0.3))
+        shootShape.collision_type = TANK_COLLISION_TYPE
+        shootShape.filter = TANK_CORE_FILTER
+
+        borderShape1 = Poly(
                 self.body,
                 [
                     (-self.surface.get_width() / 2, -self.surface.get_height() / 2),
@@ -140,8 +146,9 @@ class Tank(GameObject, Operateable):
                     ),
                     (-self.surface.get_width() / 2, self.surface.get_height() / 2),
                 ],
-            ),
-            Poly(
+            )
+        borderShape1.filter = TANK_BORDER_FILTER
+        borderShape2 = Poly(
                 self.body,
                 [
                     (
@@ -161,11 +168,18 @@ class Tank(GameObject, Operateable):
                         (self.surface.get_height() / 2) * TANK_GUN_RATE,
                     ),
                 ],
-            ),
+            )
+        borderShape2.filter = TANK_BORDER_FILTER
+
+        self.shapes = [
+            borderShape1,
+            borderShape2,
+            shootShape
         ]
         for shape in self.shapes:
-            shape.collision_type = TANK_COLLISION_TYPE
             shape.friction = 1
+            shape.elasticity = 1
+
 
     def render(self, screen: Surface):
         # 旋转图片 pymunk和pygame旋转方向相反
@@ -214,7 +228,7 @@ class Tank(GameObject, Operateable):
         # elif isinstance(weapon)
 
         img = image.load(lookPath).convert_alpha()
-        self.surface = transform.smoothscale_by(img, Tank.TANK_WIDTH / img.get_width())
+        self.surface = transform.smoothscale_by(img, TANK_WIDTH / img.get_width())
         filterSurface = Surface(self.surface.get_size())
         filterSurface.fill(self.color)
         self.surface.blit(filterSurface, (0, 0), special_flags=BLEND_RGBA_MULT)

@@ -7,7 +7,7 @@ from pygame import Surface, draw, gfxdraw
 import pygame
 from pymunk import Body, Segment, Shape, Space, Poly
 
-from game.defines import BACKGROUND
+from game.defines import BACKGROUND, WALL_FILTER
 from game.gameObject import GameObject, GameObjectData
 
 
@@ -367,6 +367,7 @@ class GameMap(GameObject):
                             )
                         )
         for shape in self.shapes:
+            shape.filter = WALL_FILTER
             shape.elasticity = 1
             shape.friction = 0
 

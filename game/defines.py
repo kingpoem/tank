@@ -10,11 +10,13 @@ WINDOW_HEIGHT = 1280
 FLOATMENU_WIDTH = 1280
 FLOATMENU_HEIGHT = 960
 
-GENERATE_GAME_ITEM_EVENT_TYPE = EventManager.allocateEventType()
-"""生成游戏物体事件"""
+from pymunk.shape_filter import ShapeFilter
 
-START_GENERATE_GAME_ITEM_EVENT_TYPE = EventManager.allocateEventType()
-GAME_ITEM_APPEAR_EVENT_TYPE = EventManager.allocateEventType()
+WALL_FILTER = ShapeFilter(categories=0b0001)
+TANK_CORE_FILTER = ShapeFilter(categories=0b0010,mask=0b1011)
+TANK_BORDER_FILTER = ShapeFilter(categories=0b0100,mask=0b0101)
+BULLET_FILTER = ShapeFilter(categories=0b1000,mask=0b0011)
+
 
 ONLINE_KEYDOWN_EVENT_TYPE = EventManager.allocateEventType()
 ONLINE_KEYUP_EVENT_TYPE = EventManager.allocateEventType()

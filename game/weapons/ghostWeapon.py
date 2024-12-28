@@ -31,7 +31,7 @@ class GhostWeapon(Weapon):
         self.__bullets = set()
 
     def fire(self):
-        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 - 4
+        BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 2
 
         # if self.owner.body.space:
 

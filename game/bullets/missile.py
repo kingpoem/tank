@@ -3,6 +3,7 @@ import math
 from loguru import logger
 from pymunk import Body, Poly
 
+from game.defines import BULLET_FILTER
 from game.events.timerManager import Timer
 from .commonBullet import BULLET_COLLISION_TYPE
 from ..events.eventDelegate import EventDelegate
@@ -70,14 +71,10 @@ class Missile(GameObject, Operateable):
         self.shapes = [
             Poly.create_box(self.body, (self.surface.get_width(), self.surface.get_height()))
         ]
+        self.shapes[0].filter = BULLET_FILTER
+        self.shapes[0].collision_type = BULLET_COLLISION_TYPE
 
         # event = EventManager.allocateEventType()
-        tempEvent = EventDelegate[None](f"{key} 导弹 延迟设置碰撞")
-
-        def __delayEnableCollisionEventHandler():
-            self.shapes[0].collision_type = BULLET_COLLISION_TYPE
-
-        self.__delayEnableCollisionTimer = Timer(__delayEnableCollisionEventHandler, 50, 1)
 
         # 音效
         self.__disappearSound = mixer.Sound("assets/disappear.mp3")
@@ -90,7 +87,7 @@ class Missile(GameObject, Operateable):
         screen.blit(r_img, r_img.get_rect(center=self.body.position))
 
     def update(self, delta: float):
-        self.__delayEnableCollisionTimer.update(delta)
+        # self.__delayEnableCollisionTimer.update(delta)
         self.__bulletDisappearTimer.update(delta)
 
     def onForward(self, delta: float):

@@ -33,7 +33,7 @@ class RemoteControlMissileWeapon(Weapon):
 
         if isinstance(self.owner, Operateable):
 
-            BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 - 4
+            BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 4
 
             self.__isShooted = True
             key = f"{self.owner.key}_Missile_{id(self)}"
@@ -57,7 +57,7 @@ class RemoteControlMissileWeapon(Weapon):
 
     def __onGameObjectAdded(self, obj: GameObject):
         if isinstance(obj, Missile) and isinstance(self.owner,Operateable):
-
+            GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
             def __onBulletRemoved(obj: GameObject):
                 assert isinstance(self.owner, Operateable)
                 assert isinstance(obj, Missile)
@@ -82,6 +82,3 @@ class RemoteControlMissileWeapon(Weapon):
         GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
         ...
 
-    def onDropped(self):
-        GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
-        ...

@@ -1,6 +1,7 @@
 from pygame import Surface, draw,mixer
 from pymunk import Body, Circle, Shape
 from game.bullets.commonBullet import BULLET_COLLISION_TYPE, CommonBullet
+from game.defines import BULLET_FILTER
 from game.events.eventDelegate import EventDelegate
 from game.events.eventManager import EventManager
 from game.events.globalEvents import GlobalEvents
@@ -55,6 +56,7 @@ class ExplosiveBomb(GameObject):
         self.shapes[0].friction = 0
         # 设置弹性系数为 1，完全反弹
         self.shapes[0].elasticity = 1
+        self.shapes[0].filter = BULLET_FILTER
         # self.shapes[0].sensor = True
         # self.shapes[0].collision_type = BULLET_COLLISION_TYPE
 

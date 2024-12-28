@@ -18,8 +18,6 @@ from pymunk.pygame_util import DrawOptions
 
 FPS = 60
 
-# FIXME 高分辨率机器上的缩放问题
-
 
 class GameLoop:
 
@@ -93,7 +91,6 @@ class GameLoop:
 
             GameLoop.__handleEvent()
             if not GameLoop.isRunning:
-                GameLoop.__onGameQuit()
                 break
 
             # OnlineManager.checkConnection()
@@ -101,20 +98,15 @@ class GameLoop:
             SceneManager.getCurrentScene().update(GameLoop.delta)
 
             GameLoop.screen.fill(BACKGROUND)
-            # 缩放对性能影响太大了
-            # widthScale = GameLoop.screen.get_width() / SceneManager.getCurrentScene().ui.get_width()
-            # heightScale = (
-            #     GameLoop.screen.get_height() / SceneManager.getCurrentScene().ui.get_height()
-            # )
-            # scaled = transform.smoothscale_by(
-            #     SceneManager.getCurrentScene().ui, min(widthScale, heightScale)
-            # )
-            scaled = SceneManager.getCurrentScene().ui
-            GameLoop.screen.blit(scaled, scaled.get_rect(center=GameLoop.screen.get_rect().center))
+
+            sceneUI = SceneManager.getCurrentScene().ui
+            GameLoop.screen.blit(sceneUI, sceneUI.get_rect(center=GameLoop.screen.get_rect().center))
             SceneManager.getCurrentScene().render(GameLoop.screen)
 
             # if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
             #     gameObjectManager.space.debug_draw(GameLoop.__debugOptions)
+
+
 
             # debug
             # FPS
@@ -128,6 +120,7 @@ class GameLoop:
 
             clock.tick(FPS)
 
+        GameLoop.__onGameQuit()
         pygame.quit()
         logger.info("游戏退出")
 

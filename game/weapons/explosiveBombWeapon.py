@@ -11,8 +11,7 @@ from game.gameObject import GameObject
 from game.weapons.weapon import Weapon
 from pygame.event import Event
 
-
-# TODO 将炮弹改为范围爆炸，可由墙体阻挡，不实际生成破片
+# TODO 在系统清除炮弹时，不产生爆炸效果
 
 
 class ExplosiveBombWeapon(Weapon):
