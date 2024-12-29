@@ -6,10 +6,10 @@ from .events.eventManager import EventManager
 
 WINDOW_TITLE = "坦克小游戏"
 
-WINDOW_WIDTH = 1440
-WINDOW_HEIGHT = 1280
+WINDOW_WIDTH = 1280
+WINDOW_HEIGHT = 1080
 
-FLOATMENU_WIDTH = 1280
+FLOATMENU_WIDTH = 1080
 FLOATMENU_HEIGHT = 960
 
 from pymunk.shape_filter import ShapeFilter

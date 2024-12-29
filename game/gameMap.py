@@ -11,11 +11,11 @@ from game.defines import BACKGROUND, WALL_FILTER
 from game.gameObject import GameObject, GameObjectData
 
 
-MAP_MAX_WIDTH = 25
-MAP_MAX_HEIGHT = 19
+MAP_MAX_WIDTH = 23
+MAP_MAX_HEIGHT = 17
 
-MAP_MIN_WIDTH = 9
-MAP_MIN_HEIGHT = 7
+MAP_MIN_WIDTH = 7
+MAP_MIN_HEIGHT = 5
 
 # 地图边距
 MARGIN_X = 40
