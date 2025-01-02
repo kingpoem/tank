@@ -129,47 +129,47 @@ class Tank(GameObject, Operateable):
 
         # 子弹实际能碰撞到的区域
         # 略微缩小一点
-        SCALE_RATE = 0.9
+        SCALE_RATE = 0.8
         shootShape = Poly(
             self.body,
             [
                 (
                     (-self.surface.get_width() / 2) * SCALE_RATE,
-                    -self.surface.get_height() / 2,
+                    -self.surface.get_height() / 2 * SCALE_RATE,
                 ),
                 (
-                    (self.surface.get_width() / 2) * TANK_BODY_RATE,
-                    -self.surface.get_height() / 2,
+                    (self.surface.get_width() / 2) * TANK_BODY_RATE * SCALE_RATE,
+                    -self.surface.get_height() / 2 * SCALE_RATE,
                 ),
                 (
-                    (self.surface.get_width() / 2) * TANK_BODY_RATE,
-                    self.surface.get_height() / 2,
+                    (self.surface.get_width() / 2) * TANK_BODY_RATE * SCALE_RATE,
+                    self.surface.get_height() / 2 * SCALE_RATE,
                 ),
                 (
                     (-self.surface.get_width() / 2) * SCALE_RATE,
-                    self.surface.get_height() / 2,
+                    self.surface.get_height() / 2 * SCALE_RATE,
                 ),
             ],
         )
         shootShape.collision_type = TANK_COLLISION_TYPE
         shootShape.filter = TANK_CORE_FILTER
 
-        # borderShape1 = Poly(
-        #     self.body,
-        #     [
-        #         (-self.surface.get_width() / 2, -self.surface.get_height() / 2),
-        #         (
-        #             (self.surface.get_width() / 2) * TANK_BODY_RATE,
-        #             -self.surface.get_height() / 2,
-        #         ),
-        #         (
-        #             (self.surface.get_width() / 2) * TANK_BODY_RATE,
-        #             self.surface.get_height() / 2,
-        #         ),
-        #         (-self.surface.get_width() / 2, self.surface.get_height() / 2),
-        #     ],
-        # )
-        # borderShape1.filter = TANK_BORDER_FILTER
+        borderShape1 = Poly(
+            self.body,
+            [
+                (-self.surface.get_width() / 2, -self.surface.get_height() / 2),
+                (
+                    (self.surface.get_width() / 2) * TANK_BODY_RATE,
+                    -self.surface.get_height() / 2,
+                ),
+                (
+                    (self.surface.get_width() / 2) * TANK_BODY_RATE,
+                    self.surface.get_height() / 2,
+                ),
+                (-self.surface.get_width() / 2, self.surface.get_height() / 2),
+            ],
+        )
+        borderShape1.filter = TANK_BORDER_FILTER
         borderShape2 = Poly(
             self.body,
             [
@@ -194,9 +194,9 @@ class Tank(GameObject, Operateable):
         borderShape2.filter = TANK_BORDER_FILTER
 
         self.shapes = [
-            # borderShape1,
+            borderShape1,
             borderShape2,
-            shootShape
+            shootShape,
         ]
         for shape in self.shapes:
             shape.friction = 1

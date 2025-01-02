@@ -1,10 +1,10 @@
-
 import math
 from loguru import logger
 from pymunk import Body, Poly
 
 from game.defines import BULLET_FILTER
 from game.events.timerManager import Timer
+from utils.easingFunc import easeLinear
 from .commonBullet import BULLET_COLLISION_TYPE
 from ..events.eventDelegate import EventDelegate
 from pygame import BLEND_RGBA_MULT, Surface, transform, image, mixer
@@ -12,8 +12,6 @@ from ..events.globalEvents import GlobalEvents
 from ..gameObject import GameObject, GameObjectData
 from ..gameSettings import GlobalSettingsManager
 from ..operateable import Operateable
-
-
 
 
 class MissileData(GameObjectData):
@@ -33,9 +31,13 @@ class Missile(GameObject, Operateable):
 
     BulletDisappeared: EventDelegate[GameObject]
 
+    __isSpeedUp: bool
+    __upSpeedRate: float = 0.5
+
     def __init__(self, key: str, data: MissileData):
         BULLET_DISAPPEAR_TIME_MS = 30 * 1000
         super().__init__(key, data)
+        self.__isSpeedUp = False
 
         def __onButtonDisappeared():
             if self.isExist:
@@ -46,10 +48,15 @@ class Missile(GameObject, Operateable):
 
         def __vec_func(body: Body, gravity: tuple[float, float], damping: float, dt: float):
             body.velocity = (
-                body.rotation_vector * GlobalSettingsManager.getGameSettings().missileSpeed
+                body.rotation_vector
+                * GlobalSettingsManager.getGameSettings().missileSpeed
+                * (1 + self.__upSpeedRate if self.__isSpeedUp else 1)
             )
+            # self.body.apply_force_at_world_point(
+            #     self.body.rotation_vector * 1000, self.body.position
+            # )
             # body.velocity = body.velocity * 1.02
-            body.update_velocity(body, (0, 0), 1, dt)
+            body.update_velocity(body, (0, 0), 0.95, dt)
 
         self.__style = data.style
         o_img = image.load("assets/missile.png").convert_alpha()
@@ -69,7 +76,9 @@ class Missile(GameObject, Operateable):
         self.body.velocity_func = __vec_func
 
         self.shapes = [
-            Poly.create_box(self.body, (self.surface.get_width() * 0.6, self.surface.get_height() * 0.6))
+            Poly.create_box(
+                self.body, (self.surface.get_width() * 0.6, self.surface.get_height() * 0.6)
+            )
         ]
         self.shapes[0].filter = BULLET_FILTER
         self.shapes[0].collision_type = BULLET_COLLISION_TYPE
@@ -89,17 +98,19 @@ class Missile(GameObject, Operateable):
     def update(self, delta: float):
         # self.__delayEnableCollisionTimer.update(delta)
         self.__bulletDisappearTimer.update(delta)
+        self.__isSpeedUp = False
 
     def onForward(self, delta: float):
-        self.body.apply_force_at_world_point(
-            self.body.rotation_vector * 300000 * delta, self.body.position
-        )
+        # self.body.apply_force_at_world_point(
+        #     self.body.rotation_vector * 3000000 * delta, self.body.position
+        # )
+        self.__isSpeedUp = True
 
     def onLeft(self, delta: float):
-        self.body.angular_velocity = -300 * delta
+        self.body.angular_velocity = -500 * delta
 
     def onRight(self, delta: float):
-        self.body.angular_velocity = 300 * delta
+        self.body.angular_velocity = 500 * delta
 
     def onShoot(self, delta: float, isFirstShoot: bool):
         if isFirstShoot:

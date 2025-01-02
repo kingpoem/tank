@@ -25,7 +25,9 @@ class RemoteControlMissileWeapon(Weapon):
 
     __isShooted: bool = False
 
+
     __missile: Missile | None = None
+    __missileKey: str | None = None
 
     def fire(self):
         from game.tank import Tank, TANK_COLOR
@@ -36,7 +38,7 @@ class RemoteControlMissileWeapon(Weapon):
             BULLET_SHOOT_DIS = self.owner.surface.get_width() / 2 + 6
 
             self.__isShooted = True
-            key = f"{self.owner.key}_Missile_{id(self)}"
+            self.__missileKey = f"{self.owner.key}_Missile_{id(self)}"
 
 
             style = (255, 255, 255)
@@ -44,7 +46,7 @@ class RemoteControlMissileWeapon(Weapon):
                 style = self.owner.color
 
             GlobalEvents.GameObjectAdding(
-                key,
+                self.__missileKey,
                 MissileData(
                     self.owner.body.position[0]
                     + self.owner.body.rotation_vector.x * BULLET_SHOOT_DIS,
@@ -57,6 +59,9 @@ class RemoteControlMissileWeapon(Weapon):
 
     def __onGameObjectAdded(self, obj: GameObject):
         if isinstance(obj, Missile) and isinstance(self.owner,Operateable):
+            # 如果事件接收者与发射者不是同一个，就不接收事件
+            if obj.key != self.__missileKey:
+                return
             GlobalEvents.GameObjectAdded -= self.__onGameObjectAdded
             def __onBulletRemoved(obj: GameObject):
                 assert isinstance(self.owner, Operateable)

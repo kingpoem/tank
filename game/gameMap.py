@@ -177,7 +177,6 @@ class GameMap(GameObject):
         self.__reGenMapObject()
 
     def __init__(self, key: str, data: GameMapData):
-        from game.defines import BACKGROUND
         super().__init__(key, data)
         self.map = data
 
