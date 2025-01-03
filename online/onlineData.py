@@ -32,3 +32,10 @@ class GameUpdateData(OnlineData):
 class RequestGameObjectData(OnlineData):
     def __init__(self, keys: Sequence[str]):
         self.keys = keys
+
+class ConfirmOnlineData(OnlineData):
+    """
+    只是用来确认数据是否接收到
+    """
+    def __init__(self,isOk : bool) -> None:
+        self.isOk = isOk

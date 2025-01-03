@@ -29,6 +29,7 @@ from game.defines import (
 )
 from game.events.eventDelegate import EventDelegate
 from game.events.globalEvents import GlobalEvents
+from game.events.timerManager import Timer
 from game.gameObject import GameObject, GameObjectData, GameObjectFactory
 from game.operateable import Operateable, Operation
 from game.sceneManager import SCENE_TYPE, SceneManager
@@ -50,7 +51,7 @@ from game.gameMap import (
 from game.scenes.scene import Scene
 from game.tank import TANK_REMOVED_EVENT_TYPE, TANK_COLOR, Tank, TankData
 from game.weapons.weaponFactory import WEAPON_TYPE
-from online.onlineData import GameUpdateData
+from online.onlineData import ConfirmOnlineData, GameUpdateData
 from online.onlineManager import OnlineManager
 
 SCORE_UI_HEIGHT = 192
@@ -82,6 +83,7 @@ class ClientGameScene(Scene):
         self.GameLoaded = EventDelegate[None]("游戏加载完毕")
 
         self.__gameObjectSpace = GameObjectSpace()
+        # self.__existObjects = dict[str,int]()
         self.registerEvents()
 
         self.__gameUI = pygame.Surface(
@@ -116,11 +118,16 @@ class ClientGameScene(Scene):
 
         self.__scores = dict[str, int]()
         # self.__isScoreChanged = False
+        # self.__updateDataTimer = Timer(self.__onUpdateData, 500)
+        # self.__updateDataTimer.callBack()
+        self.__updateDataTimer = Timer(
+            lambda: OnlineManager.sendData(ConfirmOnlineData(True)), 500
+        )
+        self.__updateDataTimer.callBack()
 
         OnlineManager.GameObjectChanged += self.__onGameObjectChanged
 
     def registerEvents(self):
-
         GlobalEvents.GameObjectAdding += self.__onGameObjectAdding
         # GlobalEvents.GameObjectAdded += self.__onGameObjectAdded
         GlobalEvents.GameObjectRemoving += self.__onGameObjectRemoving
@@ -131,7 +138,6 @@ class ClientGameScene(Scene):
         # EventManager.addHandler(GAME_OBJECT_CLEAR_EVENT_TYPE,self.__onClearGameObject)
 
     def unregisterEvents(self):
-
         self.GameLoaded.clear()
         GlobalEvents.GameObjectAdding.clear()
         # GlobalEvents.GameObjectAdded.clear()
@@ -143,20 +149,27 @@ class ClientGameScene(Scene):
         # EventManager.removeHandler(GAME_OBJECT_REMOVE_EVENT_TYPE)
         # EventManager.removeHandler(GAME_OBJECT_CLEAR_EVENT_TYPE)
 
+    def __onUpdateData(self):
+        # OnlineManager.sendData(ConfirmOnlineData(True))
+        ...
+
     def __onGameScoreUpdated(self, scores: dict[str, int]):
         self.__scores = scores
         # logger.debug(f"更新得分 {self.__scores}")
 
     def __onGameObjectChanged(self, key: str, data: GameObjectData):
+        # self.__existObjects[key] = 0
         if key in self.__gameObjectSpace.objects:
             self.__gameObjectSpace.objects[key].setData(data)
         else:
             logger.debug(f"{key} 该游戏对象不存在 重新创建")
             self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
+            
 
     def __onGameObjectAdding(self, key: str, data: GameObjectData):
         logger.debug(f"{key} adding")
         self.__gameObjectSpace.registerObject(GameObjectFactory.create(key, data))
+        # self.__existObjects[key] = 0
 
     # def __onGameObjectAdded(self, obj: GameObject):
     #     if isinstance(obj, Tank):
@@ -169,6 +182,8 @@ class ClientGameScene(Scene):
 
     def __onGameObjectRemoving(self, key: str):
         logger.debug(f"{key} removing")
+        # if key in self.__existObjects:
+        #     self.__existObjects.pop(key)
         if key in self.__gameObjectSpace.objects:
             self.__gameObjectSpace.removeObject(key)
         else:
@@ -211,7 +226,14 @@ class ClientGameScene(Scene):
     def update(self, delta: float):
 
         # self.__gameObjectSpace.updateObjects(delta,False)
-        
+        # for key in self.__existObjects:
+        #     self.__existObjects[key] += 1
+
+        # delKeys = [key for key in self.__existObjects if self.__existObjects[key] > 10]
+        # for key in delKeys:
+        #     self.__existObjects.pop(key)
+        #     self.__onGameObjectRemoving(key)
+
         # 更新画面
         self.updateGameMap(delta)
         self.__ui.blit(
@@ -221,6 +243,9 @@ class ClientGameScene(Scene):
         self.updateScoreBoard(delta)
         self.__ui.blit(self.__scoreUI, (0, WINDOW_HEIGHT - self.__scoreUI.get_height()))
         self.updateGameMenu(delta)
+
+        self.__updateDataTimer.update(delta)
+        OnlineManager.tryUpdateData()
 
     def updateGameMap(self, delta: float):
         self.__gameUI.fill(BACKGROUND)
@@ -232,11 +257,10 @@ class ClientGameScene(Scene):
         for key in self.__scores:
             if key not in self.__gameObjectSpace.objects:
                 return
-            
+
         self.__scoreUI.fill(BACKGROUND)
 
         SCORE_PART_WIDTH = 320
-
 
         basePoint = ((self.__scoreUI.get_width() - SCORE_PART_WIDTH * len(self.__scores)) / 2, 36)
         for i, key in enumerate(self.__scores):
@@ -251,8 +275,6 @@ class ClientGameScene(Scene):
                 )
             # else:
             #     self.__isScoreChanged = True
-
-        
 
     def updateGameMenu(self, delta: float):
         self.__gameMenu.update(delta)

@@ -1,10 +1,7 @@
-
 import sys
 from loguru import logger
 import cProfile
 import pstats
-
-
 
 
 def __configureLogger():
@@ -16,6 +13,16 @@ def __configureLogger():
         backtrace=True,
         diagnose=True,
     )
+    logger.add(
+        "logs/{time:YYYY-MM-DD}.log",
+        format="<green>{time:HH:mm:ss}</green>| {file} {line} | <level>{level}</level> | {message}",
+        rotation="1 day",
+        backtrace=True,
+        diagnose=True,
+        level="INFO",
+    )
+
+
 #     # logger.trace("程序启动")
 #     # logger.debug("程序启动")
 #     # logger.info("程序启动")
@@ -29,6 +36,7 @@ if __name__ == "__main__":
     # 初始化 logger 配置
     __configureLogger()
     from game.gameLoop import GameLoop
+
     # 开始游戏循环
     GameLoop.run()
 
@@ -36,7 +44,3 @@ if __name__ == "__main__":
 
     # p = pstats.Stats('states.prof')
     # p.sort_stats(pstats.SortKey.TIME).print_stats(20)
-    
-
-
-

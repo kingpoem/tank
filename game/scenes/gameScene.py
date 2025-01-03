@@ -140,6 +140,8 @@ class GameScene(Scene):
         if SPACE_DEBUG:
             self.__debug = DrawOptions(self.__ui)
 
+        self.__sendDataCount = 0
+
     def registerEvents(self):
         self.GameOvered += self.__onGameOvered
         self.GameLoaded += self.__onGameLoaded
@@ -303,7 +305,7 @@ class GameScene(Scene):
                 random.uniform(0, math.pi),
                 TANK_COLOR.RED.value,
                 Operation(pygame.K_w, pygame.K_s, pygame.K_a, pygame.K_d, pygame.K_g),
-                WEAPON_TYPE.MISSILE_WEAPON,
+                WEAPON_TYPE.COMMON_WEAPON,
             ),
         )
 
@@ -315,7 +317,7 @@ class GameScene(Scene):
                 random.uniform(0, math.pi),
                 TANK_COLOR.GREEN.value,
                 Operation(pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, pygame.K_KP_0),
-                WEAPON_TYPE.MISSILE_WEAPON,
+                WEAPON_TYPE.COMMON_WEAPON,
             )
             if OnlineManager.isConnected() and OnlineManager.isServer():
                 P2TankData.operation = Operation(
@@ -361,6 +363,10 @@ class GameScene(Scene):
             if self.__ai is not None:
                 self.__ai.update(delta)
             self.__trySendSceneData()
+            # if self.__sendDataCount > 0:
+            #     self.__trySendSceneData()
+            #     self.__sendDataCount = 0
+            # self.__sendDataCount += 1
 
         # 更新画面
         self.updateGameMap(delta)
@@ -375,6 +381,8 @@ class GameScene(Scene):
             self.gameObjectSpace.space.debug_draw(self.__debug)
 
         self.updateGameMenu(delta)
+
+        OnlineManager.tryUpdateData()
 
     def updateGameMap(self, delta: float):
         if self.__isLoaded is False:
@@ -425,12 +433,12 @@ class GameScene(Scene):
         if OnlineManager.isConnected() and OnlineManager.isServer():
             datas = dict[str, GameObjectData]()
             for key in self.gameObjectSpace.objects:
-                # 排除地图更新数据
-                # 因为地图不每时每刻更新
-                if key == "GameMap":
-                    continue
-                if key.startswith("GameItem_"):
-                    continue
+                # # 排除地图更新数据
+                # # 因为地图不每时每刻更新
+                # if key == "GameMap":
+                #     continue
+                # if key.startswith("GameItem_"):
+                #     continue
                 datas[key] = self.gameObjectSpace.objects[key].getData()
             scores = dict[str, int]()
             for i, tank in enumerate(self.__tanks):

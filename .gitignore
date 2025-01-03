@@ -5,6 +5,7 @@
 dist
 build
 assets
+logs
 
 __pycache__
 

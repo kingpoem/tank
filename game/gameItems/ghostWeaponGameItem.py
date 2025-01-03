@@ -36,3 +36,6 @@ class GhostWeaponGameItem(GameItem):
         return GhostWeaponGameItemData(
             self.mapX,self.mapY,self.body.position[0], self.body.position[1], self.body.angle
         )
+
+    def setData(self, data: GameObjectData):
+        ...
