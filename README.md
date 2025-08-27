@@ -1,15 +1,21 @@
 # TankGame
 
+## Refactor
+
+- poetry run black .
+- poetry run isort .
+- poetry run autoflake-clean
+- poetry run tank
+
 ## 📄介绍
 
-![](https://img.shields.io/badge/Python%203.12.7-3776AB?style=for-the-badge&logo=python&logoColor=white)
+python = 3.12.7
+
 
 使用`Python`库
 - `pygame`
 - `pymunk`
 - `loguru`
-
-联机其实并不稳定，所以我明白了一个道理，python并不适合做游戏，所以之后还是用C#和Godot引擎做游戏吧，不要自己再手搓轮子了
 
 ## 操作说明
 
