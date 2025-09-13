@@ -35,11 +35,11 @@ MENU_ENV_BACKGROUND = (120, 120, 120, 100)
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-FONT_DIR = BASE_DIR / "assets/fonts/JBMapleMono"
+FONT_DIR = BASE_DIR / "assets/fonts/noto-cjk"
 
-FONT_REGULAR = FONT_DIR / "JetBrainsMapleMono-Regular.ttf"
-FONT_BOLD = FONT_DIR / "JetBrainsMapleMono-Bold.ttf"
-FONT_EXTRA_BOLD = FONT_DIR / "JetBrainsMapleMono-ExtraBold.ttf"
+FONT_REGULAR = FONT_DIR / "NotoSerifCJK-Regular.ttc"
+FONT_BOLD = FONT_DIR / "NotoSerifCJK-Medium.ttc"
+FONT_EXTRA_BOLD = FONT_DIR / "NotoSerifCJK-Bold.ttc"
 
 SMALL_FONT = Font(FONT_REGULAR, 24)
 MEDIAN_FONT = Font(FONT_REGULAR, 32)
