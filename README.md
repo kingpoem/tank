@@ -6,6 +6,7 @@
 ```shell
 git clone --depth=1 https://github.com/kingpoem/tank.git
 cd tank
+poetry env use 3.12
 poetry install
 poetry run tank
 ```
