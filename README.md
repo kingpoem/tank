@@ -3,6 +3,14 @@
 ## Env Create
 
 在 Win11 MacOS Archlinux 平台均可通过如下命令启动（在已经安装 poetry 的情况下）
+
+win11 平台前置安装：
+```shell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
+scoop install poetry
+```
+
 ```shell
 git clone --depth=1 https://github.com/kingpoem/tank.git
 cd tank
