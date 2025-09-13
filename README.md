@@ -1,5 +1,14 @@
 # TankGame
 
+## Env Create
+
+在 Win11 MacOS Archlinux 平台均可通过如下命令启动（在已经安装 poetry 的情况下）
+```shell
+git clone --depth=1 https://github.com/kingpoem/tank.git
+cd tank
+poetry install
+poetry run tank
+```
 ## Refactor
 
 - poetry run black .
