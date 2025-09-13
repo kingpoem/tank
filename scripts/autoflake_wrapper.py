@@ -3,12 +3,13 @@ import subprocess
 
 
 def main():
-    subprocess.run([
-        "autoflake",
-        "--in-place",
-        "--remove-unused-variables",
-        "--remove-all-unused-imports",
-        "--recursive",
-        "."
-    ])
-
+    subprocess.run(
+        [
+            "autoflake",
+            "--in-place",
+            "--remove-unused-variables",
+            "--remove-all-unused-imports",
+            "--recursive",
+            ".",
+        ]
+    )
