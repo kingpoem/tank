@@ -8,6 +8,11 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 Invoke-RestMethod -Uri https://get.scoop.sh | Invoke-Expression
 scoop install poetry
 ```
+如果没装python3.12,scoop也可以安装
+```shell
+scoop bucket add versions
+scoop install python@3.12.0
+```
 
 在 Win11 MacOS Archlinux 平台均可通过如下命令启动（在已经安装 poetry 的情况下）
 ```shell
