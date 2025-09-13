@@ -128,16 +128,7 @@ class GameObjectFactory(ABC):
     @staticmethod
     def create(key: str, data: GameObjectData) -> GameObject:
         from .bullets.commonBullet import CommonBullet, CommonBulletData
-        from .bullets.explosiveBomb import ExplosiveBomb, ExplosiveBombData
         from .bullets.ghostBullet import GhostBullet, GhostBulletData
-        from .effects.explosiveBombEffect import (
-            ExplosiveBombEffect,
-            ExplosiveBombEffectData,
-        )
-        from .gameItems.fragmentWeaponGameItem import (
-            FragmentWeaponGameItem,
-            FragmentWeaponGameItemData,
-        )
         from .gameItems.ghostWeaponGameItem import (
             GhostWeaponGameItem,
             GhostWeaponGameItemData,
@@ -149,11 +140,8 @@ class GameObjectFactory(ABC):
             GameMapData: GameMap,
             TankData: Tank,
             CommonBulletData: CommonBullet,
-            ExplosiveBombData: ExplosiveBomb,
             GhostBulletData: GhostBullet,
-            FragmentWeaponGameItemData: FragmentWeaponGameItem,
             GhostWeaponGameItemData: GhostWeaponGameItem,
-            ExplosiveBombEffectData: ExplosiveBombEffect,
         }
 
         if type(data) in recipe:

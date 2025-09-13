@@ -8,7 +8,6 @@ from tank.game.events.delegate import Delegate
 from tank.game.events.timerManager import Timer, TimerManager
 
 from .events.globalEvents import GlobalEvents
-from .gameItems.fragmentWeaponGameItem import FragmentWeaponGameItemData
 from .gameItems.gameItem import GameItem
 from .gameItems.ghostWeaponGameItem import GhostWeaponGameItemData
 from .gameMap import MAP_PLOT_TYPE, GameMap
@@ -94,7 +93,6 @@ class GameItemManager:
         logger.debug(f"生成游戏物品位置 {mapX} {mapY} {x} {y}")
         return random.choice(
             [
-                FragmentWeaponGameItemData,
                 GhostWeaponGameItemData,
             ]
         )(mapX, mapY, x, y, random.uniform(-0.5, 0.5))

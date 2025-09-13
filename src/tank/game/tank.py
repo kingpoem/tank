@@ -232,17 +232,13 @@ class Tank(GameObject, Operateable):
         logger.debug(f"坦克射击 {self.key} {type(self.__weapon)}")
 
     def refreshTankStyle(self):
-        # from game.weapons.commonWeapon import CommonWeapon
-        from tank.game.weapons.explosiveBombWeapon import ExplosiveBombWeapon
         from tank.game.weapons.ghostWeapon import GhostWeapon
 
         lookPath = f"src/tank/assets/tank.png"
         if self.weapon.canUse():
+            # 根据拥有武器类型更改坦克图样
             if isinstance(self.weapon, GhostWeapon):
                 lookPath = f"src/tank/assets/tank_with_ghost.png"
-            elif isinstance(self.weapon, ExplosiveBombWeapon):
-                lookPath = f"src/tank/assets/tank_with_bomb.png"
-        # elif isinstance(weapon)
 
         img = image.load(lookPath).convert_alpha()
         self.surface = transform.smoothscale_by(img, TANK_WIDTH / img.get_width())
