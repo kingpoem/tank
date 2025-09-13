@@ -7,7 +7,6 @@ from tank.game.weapons.weapon import Weapon
 class WEAPON_TYPE(Enum):
     COMMON_WEAPON = 0
     GHOST_WEAPON = 1
-    MISSILE_WEAPON = 2
     EXPLOSIVEBOMB_WEAPON = 3
 
 
@@ -21,14 +20,10 @@ class WeaponFactory:
         from tank.game.weapons.commonWeapon import CommonWeapon
         from tank.game.weapons.explosiveBombWeapon import ExplosiveBombWeapon
         from tank.game.weapons.ghostWeapon import GhostWeapon
-        from tank.game.weapons.remoteControlMissileWeapon import (
-            RemoteControlMissileWeapon,
-        )
 
         weaponList: list[type[Weapon]] = [
             CommonWeapon,
             GhostWeapon,
-            RemoteControlMissileWeapon,
             ExplosiveBombWeapon,
         ]
         return weaponList[weaponType.value](owner)
@@ -38,14 +33,10 @@ class WeaponFactory:
         from tank.game.weapons.commonWeapon import CommonWeapon
         from tank.game.weapons.explosiveBombWeapon import ExplosiveBombWeapon
         from tank.game.weapons.ghostWeapon import GhostWeapon
-        from tank.game.weapons.remoteControlMissileWeapon import (
-            RemoteControlMissileWeapon,
-        )
 
         weaponList: list[type[Weapon]] = [
             CommonWeapon,
             GhostWeapon,
-            RemoteControlMissileWeapon,
             ExplosiveBombWeapon,
         ]
         return WEAPON_TYPE(weaponList.index(type(weapon)))

@@ -235,15 +235,10 @@ class Tank(GameObject, Operateable):
         # from game.weapons.commonWeapon import CommonWeapon
         from tank.game.weapons.explosiveBombWeapon import ExplosiveBombWeapon
         from tank.game.weapons.ghostWeapon import GhostWeapon
-        from tank.game.weapons.remoteControlMissileWeapon import (
-            RemoteControlMissileWeapon,
-        )
 
         lookPath = f"src/tank/assets/tank.png"
         if self.weapon.canUse():
-            if isinstance(self.weapon, RemoteControlMissileWeapon):
-                lookPath = f"src/tank/assets/tank_with_missile.png"
-            elif isinstance(self.weapon, GhostWeapon):
+            if isinstance(self.weapon, GhostWeapon):
                 lookPath = f"src/tank/assets/tank_with_ghost.png"
             elif isinstance(self.weapon, ExplosiveBombWeapon):
                 lookPath = f"src/tank/assets/tank_with_bomb.png"

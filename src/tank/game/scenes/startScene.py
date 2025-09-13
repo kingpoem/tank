@@ -164,16 +164,6 @@ class StartScene(Scene):
                 GlobalSettingsManager.getGameSettings().ghostSpeedIncreaseRate + 0.002,
             )
 
-        def __downMissileSpeed():
-            GlobalSettingsManager.getGameSettings().missileSpeed = max(
-                50, GlobalSettingsManager.getGameSettings().missileSpeed - 50
-            )
-
-        def __upMissileSpeed():
-            GlobalSettingsManager.getGameSettings().missileSpeed = min(
-                1000, GlobalSettingsManager.getGameSettings().missileSpeed + 50
-            )
-
         self.__settingMenu = FloatMenu(
             self.__ui,
             FLOATMENU_WIDTH,
@@ -223,15 +213,6 @@ class StartScene(Scene):
                         lambda: None,
                         __downGhostSpeedIncreaseRate,
                         __upGhostSpeedIncreaseRate,
-                    ),
-                    Selection(
-                        lambda: "导弹速度 {}".format(
-                            GlobalSettingsManager.getGameSettings().missileSpeed
-                        ),
-                        SELECTION_HEIGHT,
-                        lambda: None,
-                        __downMissileSpeed,
-                        __upMissileSpeed,
                     ),
                 ],
             ),

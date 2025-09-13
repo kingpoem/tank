@@ -130,7 +130,6 @@ class GameObjectFactory(ABC):
         from .bullets.commonBullet import CommonBullet, CommonBulletData
         from .bullets.explosiveBomb import ExplosiveBomb, ExplosiveBombData
         from .bullets.ghostBullet import GhostBullet, GhostBulletData
-        from .bullets.missile import Missile, MissileData
         from .effects.explosiveBombEffect import (
             ExplosiveBombEffect,
             ExplosiveBombEffectData,
@@ -143,10 +142,6 @@ class GameObjectFactory(ABC):
             GhostWeaponGameItem,
             GhostWeaponGameItemData,
         )
-        from .gameItems.remoteControlMissileGameItem import (
-            RemoteControlMissileGameItem,
-            RemoteControlMissileGameItemData,
-        )
         from .gameMap import GameMap, GameMapData
         from .tank import Tank, TankData
 
@@ -156,10 +151,8 @@ class GameObjectFactory(ABC):
             CommonBulletData: CommonBullet,
             ExplosiveBombData: ExplosiveBomb,
             GhostBulletData: GhostBullet,
-            MissileData: Missile,
             FragmentWeaponGameItemData: FragmentWeaponGameItem,
             GhostWeaponGameItemData: GhostWeaponGameItem,
-            RemoteControlMissileGameItemData: RemoteControlMissileGameItem,
             ExplosiveBombEffectData: ExplosiveBombEffect,
         }
 

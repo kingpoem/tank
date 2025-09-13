@@ -7,7 +7,6 @@ class GameSettings:
     __commonBulletSpeed: float = 200
     __ghostBulletSpeed: float = 200
     __ghostSpeedIncreaseRate: float = 3
-    __missileSpeed: float = 200
 
     @property
     def tankSpeed(self) -> float:
@@ -40,14 +39,6 @@ class GameSettings:
     @ghostSpeedIncreaseRate.setter
     def ghostSpeedIncreaseRate(self, value: float):
         self.__ghostSpeedIncreaseRate = value
-
-    @property
-    def missileSpeed(self):
-        return self.__missileSpeed
-
-    @missileSpeed.setter
-    def missileSpeed(self, value: float):
-        self.__missileSpeed = value
 
     def __init__(self): ...
 

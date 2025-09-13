@@ -11,7 +11,6 @@ from .events.globalEvents import GlobalEvents
 from .gameItems.fragmentWeaponGameItem import FragmentWeaponGameItemData
 from .gameItems.gameItem import GameItem
 from .gameItems.ghostWeaponGameItem import GhostWeaponGameItemData
-from .gameItems.remoteControlMissileGameItem import RemoteControlMissileGameItemData
 from .gameMap import MAP_PLOT_TYPE, GameMap
 from .gameObject import GameObject, GameObjectData
 
@@ -97,7 +96,6 @@ class GameItemManager:
             [
                 FragmentWeaponGameItemData,
                 GhostWeaponGameItemData,
-                RemoteControlMissileGameItemData,
             ]
         )(mapX, mapY, x, y, random.uniform(-0.5, 0.5))
 
