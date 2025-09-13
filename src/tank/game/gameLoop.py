@@ -98,21 +98,18 @@ class GameLoop:
             )
             SceneManager.getCurrentScene().render(GameLoop.screen)
 
-            # if (gameObjectManager := SceneManager.getCurrentScene().gameObjectManager) is not None:
-            #     gameObjectManager.space.debug_draw(GameLoop.__debugOptions)
-
             # debug
             # FPS
-            SMALL_FONT.render_to(
-                GameLoop.screen, (0, 0), f"FPS: {GameLoop.fps:.2f}", FONT_COLOR
-            )
+            # SMALL_FONT.render_to(
+            #     GameLoop.screen, (0, 0), f"FPS: {GameLoop.fps:.2f}", FONT_COLOR
+            # )
             # delta
-            SMALL_FONT.render_to(
-                GameLoop.screen,
-                (0, 24),
-                f"delta: {GameLoop.delta * 1000:.1f}ms",
-                FONT_COLOR,
-            )
+            # SMALL_FONT.render_to(
+            #     GameLoop.screen,
+            #     (0, 24),
+            #     f"delta: {GameLoop.delta * 1000:.1f}ms",
+            #     FONT_COLOR,
+            # )
 
             pygame.display.update()
 
